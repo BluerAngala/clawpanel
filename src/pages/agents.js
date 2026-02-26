@@ -88,6 +88,13 @@ function renderConfig(page, state) {
     }
   })
 
+  // fallback 输入框实时同步到 state
+  el.querySelectorAll('.fallback-input').forEach((input, i) => {
+    input.oninput = () => {
+      if (model.fallbacks) model.fallbacks[i] = input.value
+    }
+  })
+
   // 添加 fallback
   el.querySelector('#btn-add-fallback').onclick = () => {
     if (!model.fallbacks) model.fallbacks = []
