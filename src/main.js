@@ -17,11 +17,8 @@ registerRoute('/dashboard', () => import('./pages/dashboard.js'))
 registerRoute('/services', () => import('./pages/services.js'))
 registerRoute('/logs', () => import('./pages/logs.js'))
 registerRoute('/models', () => import('./pages/models.js'))
-registerRoute('/agents', () => import('./pages/agents.js'))
 registerRoute('/gateway', () => import('./pages/gateway.js'))
-registerRoute('/mcp', () => import('./pages/mcp.js'))
 registerRoute('/memory', () => import('./pages/memory.js'))
-registerRoute('/deploy', () => import('./pages/deploy.js'))
 
 // 初始化主题
 initTheme()

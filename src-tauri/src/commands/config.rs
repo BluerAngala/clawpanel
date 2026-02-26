@@ -11,6 +11,10 @@ fn openclaw_dir() -> PathBuf {
         .join(".openclaw")
 }
 
+fn backups_dir() -> PathBuf {
+    openclaw_dir().join("backups")
+}
+
 #[tauri::command]
 pub fn read_openclaw_config() -> Result<Value, String> {
     let path = openclaw_dir().join("openclaw.json");
@@ -95,4 +99,104 @@ pub fn write_env_file(path: String, config: String) -> Result<(), String> {
     }
     fs::write(&expanded, &config)
         .map_err(|e| format!("写入 .env 失败: {e}"))
+}
+
+// ===== 备份管理 =====
+
+#[tauri::command]
+pub fn list_backups() -> Result<Value, String> {
+    let dir = backups_dir();
+    if !dir.exists() {
+        return Ok(Value::Array(vec![]));
+    }
+    let mut backups: Vec<Value> = vec![];
+    let entries = fs::read_dir(&dir)
+        .map_err(|e| format!("读取备份目录失败: {e}"))?;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+        let meta = fs::metadata(&path).ok();
+        let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+        let created = meta
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+
+        let mut obj = serde_json::Map::new();
+        obj.insert("name".into(), Value::String(name));
+        obj.insert("size".into(), Value::Number(size.into()));
+        obj.insert("created_at".into(), Value::Number(created.into()));
+        backups.push(Value::Object(obj));
+    }
+    // 按时间倒序
+    backups.sort_by(|a, b| {
+        let ta = a.get("created_at").and_then(|v| v.as_u64()).unwrap_or(0);
+        let tb = b.get("created_at").and_then(|v| v.as_u64()).unwrap_or(0);
+        tb.cmp(&ta)
+    });
+    Ok(Value::Array(backups))
+}
+
+#[tauri::command]
+pub fn create_backup() -> Result<Value, String> {
+    let dir = backups_dir();
+    fs::create_dir_all(&dir)
+        .map_err(|e| format!("创建备份目录失败: {e}"))?;
+
+    let src = openclaw_dir().join("openclaw.json");
+    if !src.exists() {
+        return Err("openclaw.json 不存在".into());
+    }
+
+    let now = chrono::Local::now();
+    let name = format!("openclaw-{}.json", now.format("%Y%m%d-%H%M%S"));
+    let dest = dir.join(&name);
+    fs::copy(&src, &dest)
+        .map_err(|e| format!("备份失败: {e}"))?;
+
+    let size = fs::metadata(&dest).map(|m| m.len()).unwrap_or(0);
+    let mut obj = serde_json::Map::new();
+    obj.insert("name".into(), Value::String(name));
+    obj.insert("size".into(), Value::Number(size.into()));
+    Ok(Value::Object(obj))
+}
+
+#[tauri::command]
+pub fn restore_backup(name: String) -> Result<(), String> {
+    // 安全检查
+    if name.contains("..") || name.contains('/') {
+        return Err("非法文件名".into());
+    }
+    let backup_path = backups_dir().join(&name);
+    if !backup_path.exists() {
+        return Err(format!("备份文件不存在: {name}"));
+    }
+    let target = openclaw_dir().join("openclaw.json");
+
+    // 恢复前先自动备份当前配置
+    if target.exists() {
+        let _ = create_backup();
+    }
+
+    fs::copy(&backup_path, &target)
+        .map_err(|e| format!("恢复失败: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_backup(name: String) -> Result<(), String> {
+    if name.contains("..") || name.contains('/') {
+        return Err("非法文件名".into());
+    }
+    let path = backups_dir().join(&name);
+    if !path.exists() {
+        return Err(format!("备份文件不存在: {name}"));
+    }
+    fs::remove_file(&path)
+        .map_err(|e| format!("删除失败: {e}"))
 }

@@ -29,12 +29,16 @@ export async function render() {
           <button class="btn btn-sm btn-secondary" id="btn-new-file" style="flex:1">+ 新建</button>
           <button class="btn btn-sm btn-danger" id="btn-del-file" disabled style="flex:1">删除</button>
         </div>
+        <div style="padding:0 var(--space-sm) var(--space-sm)">
+          <button class="btn btn-sm btn-secondary" id="btn-export-zip" style="width:100%">打包下载全部</button>
+        </div>
         <div id="file-tree">加载中...</div>
       </div>
       <div class="memory-editor">
         <div class="editor-toolbar">
           <span id="current-file" style="font-size:var(--font-size-sm);color:var(--text-tertiary)">选择文件查看</span>
           <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-secondary" id="btn-download" disabled>下载</button>
             <button class="btn btn-sm btn-secondary" id="btn-preview" disabled>预览</button>
             <button class="btn btn-sm btn-primary" id="btn-save-file" disabled>保存</button>
           </div>
@@ -98,6 +102,12 @@ export async function render() {
     }
   }
 
+  // 单个下载
+  page.querySelector('#btn-download').onclick = () => downloadCurrentFile(page, state)
+
+  // 打包下载
+  page.querySelector('#btn-export-zip').onclick = () => exportZip(state)
+
   loadFiles(page, state)
   return page
 }
@@ -142,6 +152,7 @@ async function loadFileContent(page, state) {
   const btnSave = page.querySelector('#btn-save-file')
   const btnPreview = page.querySelector('#btn-preview')
   const btnDel = page.querySelector('#btn-del-file')
+  const btnDl = page.querySelector('#btn-download')
 
   editor.disabled = true
   editor.value = '加载中...'
@@ -160,6 +171,7 @@ async function loadFileContent(page, state) {
     btnSave.disabled = false
     btnPreview.disabled = false
     btnDel.disabled = false
+    btnDl.disabled = false
   } catch (e) {
     editor.value = '读取失败: ' + e
     toast('读取文件失败: ' + e, 'error')
@@ -178,6 +190,7 @@ function resetEditor(page) {
   page.querySelector('#btn-preview').disabled = true
   page.querySelector('#btn-preview').textContent = '预览'
   page.querySelector('#btn-del-file').disabled = true
+  page.querySelector('#btn-download').disabled = true
 }
 
 async function saveFile(page, state) {
@@ -227,4 +240,38 @@ function renderMarkdown(md) {
     .replace(/^- (.+)$/gm, '<li style="margin-left:20px">$1</li>')
     .replace(/\n\n/g, '<br><br>')
     .replace(/\n/g, '<br>')
+}
+
+// ===== 下载功能 =====
+
+function triggerDownload(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+async function downloadCurrentFile(page, state) {
+  if (!state.currentPath) return
+  try {
+    const content = page.querySelector('#file-editor').value
+    const filename = state.currentPath.split('/').pop()
+    triggerDownload(filename, content)
+    toast(`已下载 ${filename}`, 'success')
+  } catch (e) {
+    toast('下载失败: ' + e, 'error')
+  }
+}
+
+async function exportZip(state) {
+  try {
+    const zipPath = await api.exportMemoryZip(state.category)
+    const label = CATEGORIES.find(c => c.key === state.category)?.label || state.category
+    toast(`已导出: ${label} → ${zipPath}`, 'success')
+  } catch (e) {
+    toast('打包下载失败: ' + e, 'error')
+  }
 }

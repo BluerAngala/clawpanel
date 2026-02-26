@@ -1,5 +1,6 @@
 /// 记忆文件管理命令
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 
 fn openclaw_dir() -> PathBuf {
@@ -131,4 +132,45 @@ pub fn delete_memory_file(path: String) -> Result<(), String> {
     }
 
     Err(format!("文件不存在: {path}"))
+}
+
+#[tauri::command]
+pub fn export_memory_zip(category: String) -> Result<String, String> {
+    let dir = memory_dir(&category);
+    if !dir.exists() {
+        return Err("目录不存在".to_string());
+    }
+
+    let mut files = Vec::new();
+    collect_files(&dir, &dir, &mut files, &category)?;
+    if files.is_empty() {
+        return Err("没有可导出的文件".to_string());
+    }
+
+    let tmp_dir = std::env::temp_dir();
+    let zip_name = format!(
+        "openclaw-{}-{}.zip",
+        category,
+        chrono::Local::now().format("%Y%m%d-%H%M%S")
+    );
+    let zip_path = tmp_dir.join(&zip_name);
+
+    let file = fs::File::create(&zip_path)
+        .map_err(|e| format!("创建 zip 失败: {e}"))?;
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+
+    for rel_path in &files {
+        let full_path = dir.join(rel_path);
+        let content = fs::read_to_string(&full_path)
+            .map_err(|e| format!("读取 {rel_path} 失败: {e}"))?;
+        zip.start_file(rel_path, options)
+            .map_err(|e| format!("写入 zip 失败: {e}"))?;
+        zip.write_all(content.as_bytes())
+            .map_err(|e| format!("写入内容失败: {e}"))?;
+    }
+
+    zip.finish().map_err(|e| format!("完成 zip 失败: {e}"))?;
+    Ok(zip_path.to_string_lossy().to_string())
 }

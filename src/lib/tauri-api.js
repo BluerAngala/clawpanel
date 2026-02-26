@@ -85,6 +85,7 @@ function mockInvoke(cmd, args) {
     read_memory_file: ({ path }) => `# ${path}\n\n这是 ${path} 的内容示例。\n\n## 概述\n\n在此记录工作记忆...`,
     write_memory_file: () => true,
     delete_memory_file: () => true,
+    export_memory_zip: ({ category }) => `/tmp/openclaw-${category}-20260226-160000.zip`,
     check_installation: () => ({ installed: true, path: '/usr/local/bin/openclaw', version: '2026.2.23' }),
     get_deploy_config: () => ({ gatewayUrl: 'http://127.0.0.1:18789', authToken: '', version: '2026.2.23' }),
     read_mcp_config: () => ({
@@ -99,6 +100,13 @@ function mockInvoke(cmd, args) {
     stop_service: () => true,
     restart_service: () => true,
     write_env_file: () => true,
+    list_backups: () => [
+      { name: 'openclaw-20260226-143000.json', size: 8542, created_at: 1740577800 },
+      { name: 'openclaw-20260225-100000.json', size: 8210, created_at: 1740474000 },
+    ],
+    create_backup: () => ({ name: 'openclaw-20260226-160000.json', size: 8542 }),
+    restore_backup: () => true,
+    delete_backup: () => true,
   }
   const fn = mocks[cmd]
   return fn ? Promise.resolve(fn(args)) : Promise.reject(`未知命令: ${cmd}`)
@@ -128,9 +136,16 @@ export const api = {
   readMemoryFile: (path) => invoke('read_memory_file', { path }),
   writeMemoryFile: (path, content) => invoke('write_memory_file', { path, content }),
   deleteMemoryFile: (path) => invoke('delete_memory_file', { path }),
+  exportMemoryZip: (category) => invoke('export_memory_zip', { category }),
 
   // 安装/部署
   checkInstallation: () => invoke('check_installation'),
   getDeployConfig: () => invoke('get_deploy_config'),
   writeEnvFile: (path, config) => invoke('write_env_file', { path, config }),
+
+  // 备份管理
+  listBackups: () => invoke('list_backups'),
+  createBackup: () => invoke('create_backup'),
+  restoreBackup: (name) => invoke('restore_backup', { name }),
+  deleteBackup: (name) => invoke('delete_backup', { name }),
 }

@@ -15,6 +15,10 @@ pub fn run() {
             config::get_version_info,
             config::check_installation,
             config::write_env_file,
+            config::list_backups,
+            config::create_backup,
+            config::restore_backup,
+            config::delete_backup,
             // 服务
             service::get_services_status,
             service::start_service,
@@ -28,6 +32,7 @@ pub fn run() {
             memory::read_memory_file,
             memory::write_memory_file,
             memory::delete_memory_file,
+            memory::export_memory_zip,
         ])
         .run(tauri::generate_context!())
         .expect("启动 ClawPanel 失败");
