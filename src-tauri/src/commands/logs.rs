@@ -40,11 +40,7 @@ pub fn read_log_tail(log_name: String, lines: Option<u32>) -> Result<String, Str
 
     // 最多从尾部读取 1MB，避免 OOM
     let max_read: u64 = 1024 * 1024;
-    let start_pos = if file_len > max_read {
-        file_len - max_read
-    } else {
-        0
-    };
+    let start_pos = file_len.saturating_sub(max_read);
 
     file.seek(SeekFrom::Start(start_pos))
         .map_err(|e| format!("Seek 失败: {e}"))?;

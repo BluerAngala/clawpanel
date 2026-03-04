@@ -46,7 +46,7 @@ fn get_or_create_key() -> Result<(String, String, SigningKey), String> {
 
     let device_id = {
         let mut hasher = Sha256::new();
-        hasher.update(&pub_bytes);
+        hasher.update(pub_bytes);
         hex::encode(hasher.finalize())
     };
     let pub_b64 = base64_url_encode(&pub_bytes);
@@ -77,7 +77,7 @@ mod hex {
         data.as_ref().iter().map(|b| format!("{b:02x}")).collect()
     }
     pub fn decode(s: &str) -> Result<Vec<u8>, String> {
-        if s.len() % 2 != 0 {
+        if !s.len().is_multiple_of(2) {
             return Err("奇数长度".into());
         }
         (0..s.len())

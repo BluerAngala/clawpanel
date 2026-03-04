@@ -259,6 +259,7 @@ fn detect_installed_source() -> String {
             }
             return "official".into();
         }
+        return "official".into();
     }
     // Windows: 优先通过文件系统检测，避免 npm list 阻塞
     #[cfg(target_os = "windows")]
@@ -479,8 +480,8 @@ pub fn check_node() -> Result<Value, String> {
 
 #[tauri::command]
 pub fn write_env_file(path: String, config: String) -> Result<(), String> {
-    let expanded = if path.starts_with("~/") {
-        dirs::home_dir().unwrap_or_default().join(&path[2..])
+    let expanded = if let Some(stripped) = path.strip_prefix("~/") {
+        dirs::home_dir().unwrap_or_default().join(stripped)
     } else {
         PathBuf::from(&path)
     };

@@ -465,15 +465,24 @@ pub async fn get_services_status() -> Result<Vec<ServiceStatus>, String> {
 
 #[tauri::command]
 pub async fn start_service(label: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    return platform::start_service_impl(&label);
+    #[cfg(not(target_os = "macos"))]
     platform::start_service_impl(&label).await
 }
 
 #[tauri::command]
 pub async fn stop_service(label: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    return platform::stop_service_impl(&label);
+    #[cfg(not(target_os = "macos"))]
     platform::stop_service_impl(&label).await
 }
 
 #[tauri::command]
 pub async fn restart_service(label: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    return platform::restart_service_impl(&label);
+    #[cfg(not(target_os = "macos"))]
     platform::restart_service_impl(&label).await
 }
