@@ -231,6 +231,165 @@
 
     /* ── 无闪烁主题切换 ── */
     html { transition: background-color 0.3s, color 0.3s; }
+
+    /* ── Hero 大图透视 ── */
+    .hero-image-wrap {
+      perspective: 1200px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .hero-image-wrap img {
+      transform: rotateX(4deg) scale(0.98);
+      border-radius: 16px;
+      box-shadow:
+        0 20px 60px -15px rgba(99,102,241,0.25),
+        0 0 0 1px rgba(99,102,241,0.08);
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s;
+      cursor: zoom-in;
+    }
+    .hero-image-wrap:hover img {
+      transform: rotateX(0deg) scale(1);
+      box-shadow:
+        0 30px 80px -15px rgba(99,102,241,0.35),
+        0 0 0 1px rgba(99,102,241,0.15);
+    }
+    .hero-glow {
+      position: absolute;
+      bottom: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 120px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.15), transparent 70%);
+      filter: blur(40px);
+      pointer-events: none;
+    }
+    html:not(.dark) .hero-glow {
+      background: radial-gradient(ellipse, rgba(99,102,241,0.08), transparent 70%);
+    }
+
+    /* ── 功能展示截图 ── */
+    .screenshot-frame {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(99,102,241,0.1);
+      box-shadow: 0 8px 40px -10px rgba(0,0,0,0.15);
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s;
+      cursor: zoom-in;
+    }
+    .dark .screenshot-frame {
+      border-color: rgba(255,255,255,0.06);
+      box-shadow: 0 8px 40px -10px rgba(0,0,0,0.4);
+    }
+    .screenshot-frame:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 60px -10px rgba(99,102,241,0.2);
+    }
+    .screenshot-frame img {
+      width: 100%;
+      display: block;
+    }
+
+    /* ── 小图网格 ── */
+    .gallery-card {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(99,102,241,0.08);
+      box-shadow: 0 4px 20px -5px rgba(0,0,0,0.1);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s, border-color 0.4s;
+      cursor: zoom-in;
+      position: relative;
+    }
+    .dark .gallery-card {
+      border-color: rgba(255,255,255,0.06);
+      box-shadow: 0 4px 20px -5px rgba(0,0,0,0.3);
+    }
+    .gallery-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 40px -8px rgba(99,102,241,0.2);
+      border-color: rgba(99,102,241,0.3);
+    }
+    .gallery-card img {
+      width: 100%;
+      display: block;
+    }
+    .gallery-card .gallery-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 8px 12px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.6));
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .gallery-card:hover .gallery-label {
+      opacity: 1;
+    }
+
+    /* ── 灯箱 ── */
+    .lightbox-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      padding: 24px;
+    }
+    .lightbox-overlay.active {
+      display: flex;
+    }
+    .lightbox-overlay img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 12px;
+      box-shadow: 0 0 80px rgba(99,102,241,0.2);
+      animation: lbFadeIn 0.3s ease-out;
+    }
+    @keyframes lbFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .lightbox-close:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* ── 功能标签 ── */
+    .feature-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
   </style>
   <script>
     /* 无闪烁主题初始化 */
@@ -253,7 +412,7 @@
       </a>
       <!-- 桌面导航 -->
       <div class="hidden md:flex items-center gap-7 text-sm font-medium">
-        <a href="#features" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition no-underline">功能</a>
+        <a href="#features" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition no-underline">功能预览</a>
         <a href="#tech" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition no-underline">架构</a>
         <a href="#quickstart" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition no-underline">开始</a>
         <a href="#projects" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition no-underline">生态</a>
@@ -278,7 +437,7 @@
     <!-- 移动菜单 -->
     <div id="mobile-menu" class="mobile-menu md:hidden absolute top-16 inset-x-0 bg-white/95 dark:bg-[#0a0a0f]/95 backdrop-blur-2xl border-b border-gray-200 dark:border-white/[0.06]">
       <div class="px-5 py-4 flex flex-col gap-3 text-base font-medium">
-        <a href="#features" class="py-2 text-gray-600 dark:text-gray-300 no-underline mobile-link">功能</a>
+        <a href="#features" class="py-2 text-gray-600 dark:text-gray-300 no-underline mobile-link">功能预览</a>
         <a href="#tech" class="py-2 text-gray-600 dark:text-gray-300 no-underline mobile-link">架构</a>
         <a href="#quickstart" class="py-2 text-gray-600 dark:text-gray-300 no-underline mobile-link">开始</a>
         <a href="#projects" class="py-2 text-gray-600 dark:text-gray-300 no-underline mobile-link">生态</a>
@@ -327,6 +486,12 @@
           源代码
         </a>
       </div>
+
+      <!-- Hero 大图 -->
+      <div class="reveal hero-image-wrap relative mt-16 px-4" data-delay="300">
+        <img src="./01.png" alt="ClawPanel 仪表盘" class="w-full" onclick="openLightbox(this.src)" loading="eager">
+        <div class="hero-glow"></div>
+      </div>
     </div>
   </section>
 
@@ -355,62 +520,169 @@
     </div>
   </section>
 
-  <!-- ══════════════ 功能特性 ══════════════ -->
+  <!-- ══════════════ 功能展示 ══════════════ -->
   <section id="features" class="relative py-24 overflow-hidden">
     <div class="orb orb-3"></div>
-    <div class="relative z-10 max-w-5xl mx-auto px-5">
-      <div class="text-center mb-16">
+    <div class="relative z-10 max-w-6xl mx-auto px-5">
+      <div class="text-center mb-20">
         <h2 class="reveal text-3xl md:text-4xl font-black tracking-tighter mb-4">
           强大的 <span class="gradient-text">功能矩阵</span>
         </h2>
         <p class="reveal text-gray-500 dark:text-gray-400 max-w-lg mx-auto">一个面板，管理 OpenClaw 的方方面面</p>
       </div>
 
-      <div class="spotlight-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="feature-grid">
-        <div class="spotlight-card reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1">
-          <div class="text-2xl mb-3">📊</div>
-          <h3 class="font-bold text-base mb-2">仪表盘</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">系统运行概览，服务状态实时监控，一目了然掌握 OpenClaw 运行情况。</p>
+      <!-- ── 展示 1: 实时聊天 ── -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-28">
+        <div class="reveal screenshot-frame order-2 lg:order-1" onclick="openLightbox('./02.png')">
+          <img src="./02.png" alt="实时聊天" loading="lazy">
         </div>
-        <div class="spotlight-card reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1">
-          <div class="text-2xl mb-3">⚙️</div>
-          <h3 class="font-bold text-base mb-2">服务管理</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">启停控制、版本检测与一键升级、配置备份与恢复，全生命周期管理。</p>
+        <div class="order-1 lg:order-2">
+          <div class="reveal feature-tag text-indigo-500 bg-indigo-500/10 mb-4">💬 核心功能</div>
+          <h3 class="reveal text-2xl md:text-3xl font-black tracking-tight mb-4">实时 AI 对话</h3>
+          <p class="reveal text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+            WebSocket 直连 Gateway，流式响应实时显示。支持图片附件、多模态交互、Markdown 渲染、会话管理与快捷指令。
+          </p>
+          <ul class="reveal space-y-2 text-sm text-gray-500 dark:text-gray-400">
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 流式传输，逐字显示</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 多会话管理与历史记录</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 图片拖拽上传 &amp; 灯箱预览</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> / 快捷指令系统</li>
+          </ul>
         </div>
-        <div class="spotlight-card reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1">
-          <div class="text-2xl mb-3">🧠</div>
-          <h3 class="font-bold text-base mb-2">模型配置</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">多服务商管理、批量测试、延迟检测，支持自动保存与撤销。</p>
+      </div>
+
+      <!-- ── 展示 2: 模型配置 ── -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-28">
+        <div class="order-1">
+          <div class="reveal feature-tag text-purple-500 bg-purple-500/10 mb-4">🧠 配置中心</div>
+          <h3 class="reveal text-2xl md:text-3xl font-black tracking-tight mb-4">多模型灵活调配</h3>
+          <p class="reveal text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+            支持 OpenAI、DeepSeek、Kimi 等多家服务商。可视化管理模型列表，一键设为主模型，自动备选切换。
+          </p>
+          <ul class="reveal space-y-2 text-sm text-gray-500 dark:text-gray-400">
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 多 Provider 统一管理</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 批量连通性测试</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 主模型 + 备选自动切换</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 拖拽排序 &amp; 实时保存</li>
+          </ul>
         </div>
-        <div class="spotlight-card reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1">
-          <div class="text-2xl mb-3">💬</div>
-          <h3 class="font-bold text-base mb-2">实时聊天</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">WebSocket 流式对话、图片附件、多模态、会话管理、Markdown 渲染。</p>
+        <div class="reveal screenshot-frame order-2" onclick="openLightbox('./05.png')">
+          <img src="./05.png" alt="模型配置" loading="lazy">
         </div>
-        <div class="spotlight-card reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1">
-          <div class="text-2xl mb-3">🗂️</div>
-          <h3 class="font-bold text-base mb-2">记忆管理</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">记忆文件查看、编辑、分类管理与 ZIP 导出，让 Agent 更有记忆。</p>
+      </div>
+
+      <!-- ── 展示 3: 记忆文件 ── -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-28">
+        <div class="reveal screenshot-frame order-2 lg:order-1" onclick="openLightbox('./08.png')">
+          <img src="./08.png" alt="记忆文件" loading="lazy">
         </div>
-        <div class="spotlight-card reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1">
-          <div class="text-2xl mb-3">🌐</div>
-          <h3 class="font-bold text-base mb-2">网关配置</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Gateway 端口、运行模式、认证方式可视化配置，即改即生效。</p>
+        <div class="order-1 lg:order-2">
+          <div class="reveal feature-tag text-cyan-500 bg-cyan-500/10 mb-4">🗂️ 数据管理</div>
+          <h3 class="reveal text-2xl md:text-3xl font-black tracking-tight mb-4">让 Agent 拥有记忆</h3>
+          <p class="reveal text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+            在线编辑 Agent 核心配置文件（AGENTS.md、SOUL.md 等），管理工作记忆和记忆归档。支持 ZIP 一键打包导出。
+          </p>
+          <ul class="reveal space-y-2 text-sm text-gray-500 dark:text-gray-400">
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 核心文件在线编辑</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 工作记忆 &amp; 记忆归档</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 多 Agent 记忆隔离</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> ZIP 打包下载</li>
+          </ul>
         </div>
-        <div class="spotlight-card reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1">
-          <div class="text-2xl mb-3">🔌</div>
-          <h3 class="font-bold text-base mb-2">扩展工具</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">cftunnel 内网穿透管理、ClawApp 连接状态监控等扩展功能。</p>
+      </div>
+
+      <!-- ── 展示 4: Gateway 配置 ── -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-28">
+        <div class="order-1">
+          <div class="reveal feature-tag text-emerald-500 bg-emerald-500/10 mb-4">🌐 网关管控</div>
+          <h3 class="reveal text-2xl md:text-3xl font-black tracking-tight mb-4">安全访问，可视化配置</h3>
+          <p class="reveal text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+            Gateway 端口、绑定范围、运行模式、Token / 密码认证方式，卡片式选项直观配置，即改即生效。
+          </p>
+          <ul class="reveal space-y-2 text-sm text-gray-500 dark:text-gray-400">
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 本地 / 局域网模式切换</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Token &amp; 密码双认证模式</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Tailscale Funnel 支持</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 高级选项按需展开</li>
+          </ul>
         </div>
-        <div class="spotlight-card reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1">
-          <div class="text-2xl mb-3">📋</div>
-          <h3 class="font-bold text-base mb-2">日志 &amp; 诊断</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">多日志源实时查看、搜索、系统诊断一键修复，快速定位问题。</p>
+        <div class="reveal screenshot-frame order-2" onclick="openLightbox('./07.png')">
+          <img src="./07.png" alt="Gateway 配置" loading="lazy">
         </div>
-        <div class="spotlight-card reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-300 hover:-translate-y-1">
-          <div class="text-2xl mb-3">🎨</div>
-          <h3 class="font-bold text-base mb-2">暗色 / 亮色</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">主题自动跟随系统或手动切换，毛玻璃质感 UI 设计。</p>
+      </div>
+
+      <!-- ── 展示 5: Agent 管理 ── -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-20">
+        <div class="reveal screenshot-frame order-2 lg:order-1" onclick="openLightbox('./06.png')">
+          <img src="./06.png" alt="Agent 管理" loading="lazy">
+        </div>
+        <div class="order-1 lg:order-2">
+          <div class="reveal feature-tag text-orange-500 bg-orange-500/10 mb-4">🤖 智能体</div>
+          <h3 class="reveal text-2xl md:text-3xl font-black tracking-tight mb-4">多 Agent 协作管理</h3>
+          <p class="reveal text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+            创建和管理多个 AI Agent，配置各自的身份、模型和独立工作区。支持备份、编辑与一键切换。
+          </p>
+          <ul class="reveal space-y-2 text-sm text-gray-500 dark:text-gray-400">
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 多 Agent 独立工作区</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 身份与模型单独配置</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Agent 配置备份</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 默认 Agent 快速切换</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ 更多功能 ══════════════ -->
+  <section class="relative py-24 overflow-hidden">
+    <div class="absolute inset-0 grid-bg"></div>
+    <div class="relative z-10 max-w-6xl mx-auto px-5">
+      <div class="text-center mb-16">
+        <h2 class="reveal text-3xl md:text-4xl font-black tracking-tighter mb-4">
+          还有 <span class="gradient-text">更多</span>
+        </h2>
+        <p class="reveal text-gray-500 dark:text-gray-400">运维、监控、诊断，面面俱到</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="reveal gallery-card" onclick="openLightbox('./03.png')">
+          <img src="./03.png" alt="服务管理" loading="lazy">
+          <div class="gallery-label">⚙️ 服务管理</div>
+        </div>
+        <div class="reveal gallery-card" onclick="openLightbox('./04.png')">
+          <img src="./04.png" alt="日志查看" loading="lazy">
+          <div class="gallery-label">📋 日志查看</div>
+        </div>
+        <div class="reveal gallery-card" onclick="openLightbox('./09.png')">
+          <img src="./09.png" alt="扩展工具" loading="lazy">
+          <div class="gallery-label">🔌 扩展工具</div>
+        </div>
+        <div class="reveal gallery-card" onclick="openLightbox('./10.png')">
+          <img src="./10.png" alt="系统诊断" loading="lazy">
+          <div class="gallery-label">🔍 系统诊断</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        <div class="reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-5">
+          <div class="text-lg mb-2">⚙️</div>
+          <h4 class="font-bold text-sm mb-1">服务管理</h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">启停控制、版本检测、一键升级、配置备份与恢复</p>
+        </div>
+        <div class="reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-5">
+          <div class="text-lg mb-2">�</div>
+          <h4 class="font-bold text-sm mb-1">日志查看</h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">多日志源实时查看、关键字搜索、自动滚动跟踪</p>
+        </div>
+        <div class="reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-5">
+          <div class="text-lg mb-2">�</div>
+          <h4 class="font-bold text-sm mb-1">扩展工具</h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">cftunnel 内网穿透、ClawApp 移动客户端管理</p>
+        </div>
+        <div class="reveal rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] backdrop-blur-sm p-5">
+          <div class="text-lg mb-2">🔍</div>
+          <h4 class="font-bold text-sm mb-1">系统诊断</h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">全面健康检测、WebSocket 测试、一键修复配对</p>
         </div>
       </div>
     </div>
@@ -630,8 +902,29 @@
     </div>
   </footer>
 
+  <!-- ══════════════ 灯箱 ══════════════ -->
+  <div class="lightbox-overlay" id="lightbox" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox(event)">&times;</button>
+    <img id="lightbox-img" src="" alt="预览">
+  </div>
+
   <!-- ══════════════ JavaScript ══════════════ -->
   <script>
+    /* ── 灯箱 ── */
+    function openLightbox(src) {
+      const lb = document.getElementById('lightbox')
+      document.getElementById('lightbox-img').src = src
+      lb.classList.add('active')
+      document.body.style.overflow = 'hidden'
+    }
+    function closeLightbox(e) {
+      if (e && e.target.tagName === 'IMG') return
+      document.getElementById('lightbox').classList.remove('active')
+      document.body.style.overflow = ''
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox()
+    })
     /* ── 主题切换 ── */
     function toggleTheme() {
       const html = document.documentElement
