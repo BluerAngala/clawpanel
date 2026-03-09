@@ -13,17 +13,15 @@ const NAV_ITEMS_FULL = [
     items: [
       { route: '/dashboard', label: '仪表盘', icon: 'dashboard' },
       { route: '/assistant', label: 'AI 助手', icon: 'assistant' },
-      { route: '/chat', label: '实时聊天', icon: 'chat' },
-      { route: '/services', label: '服务管理', icon: 'services' },
-      { route: '/logs', label: '日志查看', icon: 'logs' },
     ]
   },
   {
     section: '配置',
     items: [
       { route: '/models', label: '模型配置', icon: 'models' },
-      { route: '/agents', label: 'Agent 管理', icon: 'agents' },
-      { route: '/gateway', label: 'Gateway', icon: 'gateway' },
+      { route: '/agents', label: 'Agent（多开）', icon: 'agents' },
+      { route: '/gateway', label: 'Gateway（网关）', icon: 'gateway' },
+      { route: '/services', label: '服务管理', icon: 'services' },
       { route: '/security', label: '安全设置', icon: 'security' },
     ]
   },
@@ -31,13 +29,14 @@ const NAV_ITEMS_FULL = [
     section: '数据',
     items: [
       { route: '/memory', label: '记忆文件', icon: 'memory' },
+      { route: '/logs', label: '日志查看', icon: 'logs' },
     ]
   },
   {
     section: '扩展',
     items: [
-      { route: '/extensions', label: '扩展工具', icon: 'extensions' },
       { route: '/skills', label: 'Skills', icon: 'skills' },
+      { route: '/extensions', label: '扩展工具', icon: 'extensions' },
     ]
   },
   {

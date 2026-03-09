@@ -7,6 +7,7 @@ import { renderMarkdown } from '../lib/markdown.js'
 import { toast } from '../components/toast.js'
 import { showConfirm } from '../components/modal.js'
 import { api } from '../lib/tauri-api.js'
+import { wsClient } from '../lib/ws-client.js'
 import { OPENCLAW_KB } from '../lib/openclaw-kb.js'
 import { icon, statusIcon } from '../lib/icons.js'
 
@@ -55,12 +56,14 @@ const MODE_ICONS = {
   plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>',
   execute: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
   unlimited: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z"/></svg>',
+  openclaw: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
 }
 const MODES = {
   chat:     { label: '聊天', desc: '纯对话，不调用任何工具', tools: false, readOnly: false, confirmDanger: true, accent: 'var(--text-secondary)' },
   plan:     { label: '规划', desc: '可调用工具分析，但不修改文件', tools: true, readOnly: true, confirmDanger: true, accent: 'var(--info)' },
   execute:  { label: '执行', desc: '完整工具权限，危险操作需确认', tools: true, readOnly: false, confirmDanger: true, accent: 'var(--accent)' },
   unlimited:{ label: '无限', desc: '最大权限，工具调用无需确认', tools: true, readOnly: false, confirmDanger: false, accent: 'var(--warning)' },
+  openclaw: { label: 'OpenClaw', desc: '连接本地或远程的 OpenClaw 网关', tools: false, readOnly: false, confirmDanger: false, accent: 'var(--success)' },
 }
 const DEFAULT_MODE = 'execute'
 
@@ -72,7 +75,7 @@ const API_TYPES = [
 ]
 
 // ── 系统提示词 ──
-const DEFAULT_NAME = '晴辰助手'
+const DEFAULT_NAME = '我的AI助手'
 const DEFAULT_PERSONALITY = '专业、友善、简洁。善于分析问题，给出可操作的解决方案。'
 
 function getSystemPromptBase() {
@@ -1329,14 +1332,14 @@ function loadConfig() {
       apiKey: QTCOOL.defaultKey,
       model: QTCOOL.models[0].id,
       temperature: 0.7,
-      tools: { terminal: false, fileOps: false, webSearch: false },
+      tools: { terminal: true, fileOps: true, webSearch: true }, // 默认开启所有权限
       assistantName: DEFAULT_NAME,
       assistantPersonality: DEFAULT_PERSONALITY
     }
   }
   if (!_config.assistantName) _config.assistantName = DEFAULT_NAME
   if (!_config.assistantPersonality) _config.assistantPersonality = DEFAULT_PERSONALITY
-  if (!_config.tools) _config.tools = { terminal: false, fileOps: false, webSearch: false }
+  if (!_config.tools) _config.tools = { terminal: true, fileOps: true, webSearch: true } // 默认开启所有权限
   if (!_config.mode) _config.mode = DEFAULT_MODE
   if (!_config.apiType) _config.apiType = 'openai'
   if (_config.autoRounds === undefined) _config.autoRounds = 8
@@ -2389,53 +2392,26 @@ function renderErrorBanner() {
 }
 
 function renderMessages() {
-  const session = getCurrentSession()
   if (!_messagesEl) return
-  if (!session || session.messages.length === 0) {
-    const skillCards = BUILTIN_SKILLS.map(s => `
-      <button class="ast-skill-card" data-skill="${s.id}">
-        <span class="ast-skill-icon">${s.icon}</span>
-        <div class="ast-skill-info">
-          <strong>${s.name}</strong>
-          <span>${s.desc}</span>
-        </div>
-      </button>
-    `).join('')
 
-    _messagesEl.innerHTML = `
-      <div class="ast-welcome">
-        <div class="ast-welcome-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
-            <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-            <path d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
-          </svg>
-        </div>
-        <h3>${_config?.assistantName || DEFAULT_NAME}</h3>
-        <p>我可以帮你分析日志、排查问题、配置 OpenClaw。<br>点击下方技能卡片，AI 会自动调用工具完成任务。</p>
-        ${getAssistantGuideHtml()}
-        <div class="ast-skills-grid">${skillCards}</div>
-      </div>
-    `
-    // 在欢迎页也显示错误 banner
-    if (_errorContext) renderErrorBanner()
+  // 平台模式逻辑
+  if (currentMode() === 'openclaw') {
+    if (_ocMessages.length === 0) {
+      renderWelcomeHtml()
+      return
+    }
+    _messagesEl.innerHTML = _ocMessages.map((m, idx) => renderMessageHtml(m, idx)).join('')
+    requestAnimationFrame(() => { _messagesEl.scrollTop = _messagesEl.scrollHeight })
     return
   }
 
-  _messagesEl.innerHTML = session.messages.map((m, idx) => {
-    if (m.role === 'user') {
-      const textPart = m._text || (typeof m.content === 'string' ? m.content : (m.content?.find?.(p => p.type === 'text')?.text || ''))
-      const imagesHtml = m._images?.length ? `<div class="ast-msg-images">${m._images.map(img =>
-        img.dataUrl
-          ? `<img class="ast-msg-img" src="${img.dataUrl}" alt="${escHtml(img.name)}" style="max-width:${Math.min(img.width || 300, 300)}px" loading="lazy"/>`
-          : `<div class="ast-msg-img-loading" data-db-id="${img.dbId || ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>${escHtml(img.name || '图片')}</span></div>`
-      ).join('')}</div>` : ''
-      return `<div class="ast-msg ast-msg-user" data-msg-idx="${idx}"><div class="ast-msg-bubble ast-msg-bubble-user">${imagesHtml}${textPart ? escHtml(textPart) : ''}</div></div>`
-    } else if (m.role === 'assistant') {
-      const toolHtml = renderToolBlocks(m.toolHistory)
-      return `<div class="ast-msg ast-msg-ai" data-msg-idx="${idx}">${toolHtml}<div class="ast-msg-bubble ast-msg-bubble-ai">${renderMarkdown(m.content)}</div></div>`
-    }
-    return ''
-  }).join('')
+  const session = getCurrentSession()
+  if (!session || session.messages.length === 0) {
+    renderWelcomeHtml()
+    return
+  }
+
+  _messagesEl.innerHTML = session.messages.map((m, idx) => renderMessageHtml(m, idx)).join('')
 
   // 从文件系统恢复图片
   _messagesEl.querySelectorAll('.ast-msg-img-loading[data-db-id]').forEach(async (el) => {
@@ -2508,15 +2484,15 @@ function showSettings() {
   const overlay = document.createElement('div')
   overlay.className = 'modal-overlay'
   overlay.innerHTML = `
-    <div class="modal" style="max-width:500px">
-      <div class="modal-title" style="margin-bottom:0">${c.assistantName || DEFAULT_NAME} — 设置</div>
-      <div class="ast-settings-tabs">
+    <div class="modal" style="width: 520px; min-height: 580px; max-width: 90vw; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-title" style="margin-bottom:0; flex-shrink: 0;">${c.assistantName || DEFAULT_NAME} — 设置</div>
+      <div class="ast-settings-tabs" style="flex-shrink: 0;">
         <button class="ast-tab active" data-tab="api">模型配置</button>
         <button class="ast-tab" data-tab="tools">工具权限</button>
         <button class="ast-tab" data-tab="persona">助手人设</button>
         <button class="ast-tab" data-tab="knowledge">知识库</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="flex: 1; overflow-y: auto; padding-right: 4px;">
       <div class="ast-settings-form">
         <div class="ast-tab-panel active" data-panel="api">
           <div style="display:flex;gap:10px">
@@ -3430,6 +3406,33 @@ async function sendMessageDirect(text) {
     return
   }
 
+  // 平台模式：通过 WebSocket 发送
+  if (currentMode() === 'openclaw') {
+    if (!wsClient.gatewayReady || !_ocSessionKey) {
+      toast('网关未就绪，请确保网关已启动', 'warning')
+      return
+    }
+    const textContent = text.trim()
+    // 乐观渲染
+    const userMsg = { role: 'user', content: textContent, ts: Date.now() }
+    _ocMessages.push(userMsg)
+    renderMessages()
+    
+    _isStreaming = true
+    _sendBtn.innerHTML = stopIcon()
+    setSessionStatus(_currentSessionId, 'streaming')
+    
+    try {
+      await wsClient.chatSend(_ocSessionKey, textContent)
+    } catch (err) {
+      toast('发送失败: ' + err.message, 'error')
+      _isStreaming = false
+      _sendBtn.innerHTML = sendIcon()
+      setSessionStatus(_currentSessionId, 'idle')
+    }
+    return
+  }
+
   let session = getCurrentSession()
   if (!session) {
     session = createSession()
@@ -3836,6 +3839,145 @@ function stopIcon() {
 }
 
 // ── 页面渲染 ──
+let _ocSessionKey = null
+let _ocUnsubs = []
+let _ocMessages = [] // 平台模式下的独立消息缓存
+
+/** 连接 OpenClaw Gateway（平台模式） */
+async function connectGateway() {
+  if (currentMode() !== 'openclaw') return
+
+  // 清理旧订阅
+  _ocUnsubs.forEach(unsub => unsub())
+  _ocUnsubs = []
+
+  // 状态变化监听
+  const unsubStatus = wsClient.onStatusChange((status, err) => {
+    if (currentMode() !== 'openclaw') return
+    const badge = _page?.querySelector('#ast-model-badge')
+    if (badge) {
+      badge.textContent = status === 'ready' ? '网关已就绪' : (status === 'error' ? '网关连接失败' : '正在连接网关...')
+      badge.className = `ast-model-badge ${status === 'ready' ? 'configured' : 'unconfigured'}`
+    }
+  })
+  _ocUnsubs.push(unsubStatus)
+
+  // 就绪监听
+  const unsubReady = wsClient.onReady((hello, sessionKey, err) => {
+    if (currentMode() !== 'openclaw') return
+    if (err) {
+      toast('连接网关失败: ' + (err.message || '未知错误'), 'error')
+      return
+    }
+    _ocSessionKey = sessionKey
+    loadOpenClawHistory()
+  })
+  _ocUnsubs.push(unsubReady)
+
+  // 事件监听
+  const unsubEvent = wsClient.onEvent((msg) => {
+    if (currentMode() !== 'openclaw') return
+    handleOpenClawEvent(msg)
+  })
+  _ocUnsubs.push(unsubEvent)
+
+  // 如果已经连接，直接加载
+  if (wsClient.connected && wsClient.gatewayReady) {
+    _ocSessionKey = wsClient.sessionKey
+    loadOpenClawHistory()
+  } else {
+    // 自动连接
+    try {
+      const config = await api.readOpenclawConfig()
+      const gw = config?.gateway || {}
+      const host = window.__TAURI_INTERNALS__ ? `127.0.0.1:${gw.port || 18789}` : location.host
+      const token = gw.auth?.token || ''
+      wsClient.connect(host, token)
+    } catch (e) {
+      toast('读取网关配置失败', 'error')
+    }
+  }
+}
+
+/** 加载 OpenClaw 历史消息 */
+async function loadOpenClawHistory() {
+  if (!_ocSessionKey || !wsClient.gatewayReady) return
+  try {
+    const result = await wsClient.chatHistory(_ocSessionKey, 50)
+    if (result?.messages) {
+      _ocMessages = result.messages.map(m => {
+        const c = extractOpenClawContent(m)
+        return {
+          role: m.role,
+          content: c.text,
+          ts: m.timestamp || Date.now(),
+          _images: c.images.map(img => ({ dataUrl: img.url || `data:${img.mediaType};base64,${img.data}` }))
+        }
+      })
+      renderMessages()
+    }
+  } catch (e) {
+    console.warn('[assistant] 加载平台历史失败:', e)
+  }
+}
+
+/** 处理 OpenClaw 实时事件 */
+function handleOpenClawEvent(msg) {
+  const { event, payload } = msg
+  if (event !== 'chat' || !payload) return
+  if (payload.sessionKey && payload.sessionKey !== _ocSessionKey) return
+
+  const { state } = payload
+  if (state === 'delta') {
+    // 流式处理：更新最后一条消息
+    const c = extractOpenClawContent(payload.message)
+    let lastMsg = _ocMessages[_ocMessages.length - 1]
+    if (!lastMsg || lastMsg.role !== 'assistant' || getSessionStatus(_currentSessionId) !== 'streaming') {
+      lastMsg = { role: 'assistant', content: '', ts: Date.now() }
+      _ocMessages.push(lastMsg)
+      setSessionStatus(_currentSessionId, 'streaming')
+    }
+    lastMsg.content = c.text
+    renderMessages()
+  } else if (state === 'final') {
+    const c = extractOpenClawContent(payload.message)
+    let lastMsg = _ocMessages[_ocMessages.length - 1]
+    if (!lastMsg || lastMsg.role !== 'assistant') {
+      lastMsg = { role: 'assistant', content: '', ts: Date.now() }
+      _ocMessages.push(lastMsg)
+    }
+    lastMsg.content = c.text
+    lastMsg._images = c.images.map(img => ({ dataUrl: img.url || `data:${img.mediaType};base64,${img.data}` }))
+    setSessionStatus(_currentSessionId, 'idle')
+    renderMessages()
+  } else if (state === 'error') {
+    toast('平台错误: ' + (payload.errorMessage || '未知错误'), 'error')
+    setSessionStatus(_currentSessionId, 'idle')
+  }
+}
+
+/** 从 OpenClaw 消息对象提取内容（适配 assistant 结构） */
+function extractOpenClawContent(message) {
+  if (!message) return { text: '', images: [] }
+  const content = message.content
+  if (typeof content === 'string') return { text: stripThinkingTags(content), images: [] }
+  
+  const texts = [], images = []
+  if (Array.isArray(content)) {
+    for (const block of content) {
+      if (block.type === 'text') texts.push(block.text)
+      else if (block.type === 'image') images.push(block)
+      else if (block.type === 'image_url') images.push({ url: block.image_url.url })
+    }
+  }
+  return { text: stripThinkingTags(texts.join('\n')), images }
+}
+
+function stripThinkingTags(text) {
+  if (!text) return ''
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+}
+
 export async function render() {
   loadConfig()
   loadSessions()
@@ -3890,7 +4032,9 @@ export async function render() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
           <span class="ast-title">${_config?.assistantName || DEFAULT_NAME}</span>
-          <span class="ast-model-badge ${_config.model ? 'configured' : 'unconfigured'}" id="ast-model-badge">${_config.model || '未配置'}</span>
+          <span class="ast-model-badge ${currentMode() === 'openclaw' ? (wsClient.gatewayReady ? 'configured' : 'unconfigured') : (_config.model ? 'configured' : 'unconfigured')}" id="ast-model-badge">
+            ${currentMode() === 'openclaw' ? (wsClient.gatewayReady ? '网关已就绪' : '正在连接网关...') : (_config.model || '未配置')}
+          </span>
         </div>
         <div class="ast-header-actions">
           <div class="ast-mode-selector" id="ast-mode-selector">
@@ -3934,6 +4078,11 @@ export async function render() {
   applyModeStyle(page, currentMode())
   // 滑块需要等 DOM 绘制完毕才能获取正确位置
   requestAnimationFrame(() => positionModeSlider(page, currentMode()))
+
+  // 如果初始模式是平台模式，启动连接
+  if (currentMode() === 'openclaw') {
+    connectGateway()
+  }
 
   // 如果有后台流式正在进行，恢复 UI 状态
   if (_isStreaming) {
@@ -4117,11 +4266,23 @@ export async function render() {
     if (!btn) return
     const modeKey = btn.dataset.mode
     if (!MODES[modeKey] || modeKey === currentMode()) return
+    
+    // 如果是从 OpenClaw 模式切出，或者切入 OpenClaw 模式，需要特殊处理
+    const oldMode = currentMode()
     _config.mode = modeKey
     saveConfig()
+    
     page.querySelectorAll('.ast-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === modeKey))
     applyModeStyle(page, modeKey)
     playModeTransition(page, modeKey)
+
+    // 如果切入平台模式，确保连接并显示状态
+    if (modeKey === 'openclaw') {
+      connectGateway()
+    } else if (oldMode === 'openclaw') {
+      // 从平台模式切回助手模式，恢复助手会话
+      renderMessages()
+    }
   })
 
   // 设置
@@ -4187,6 +4348,53 @@ export async function render() {
 function autoResize(textarea) {
   textarea.style.height = 'auto'
   textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'
+}
+
+/** 统一渲染单条消息的 HTML */
+function renderMessageHtml(m, idx) {
+  if (m.role === 'user') {
+    const textPart = m._text || (typeof m.content === 'string' ? m.content : (m.content?.find?.(p => p.type === 'text')?.text || ''))
+    const imagesHtml = m._images?.length ? `<div class="ast-msg-images">${m._images.map(img =>
+      img.dataUrl
+        ? `<img class="ast-msg-img" src="${img.dataUrl}" alt="${escHtml(img.name)}" style="max-width:${Math.min(img.width || 300, 300)}px" loading="lazy"/>`
+        : `<div class="ast-msg-img-loading" data-db-id="${img.dbId || ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>${escHtml(img.name || '图片')}</span></div>`
+    ).join('')}</div>` : ''
+    return `<div class="ast-msg ast-msg-user" data-msg-idx="${idx}"><div class="ast-msg-bubble ast-msg-bubble-user">${imagesHtml}${textPart ? escHtml(textPart) : ''}</div></div>`
+  } else if (m.role === 'assistant') {
+    const toolHtml = m.toolHistory ? renderToolBlocks(m.toolHistory) : ''
+    return `<div class="ast-msg ast-msg-ai" data-msg-idx="${idx}">${toolHtml}<div class="ast-msg-bubble ast-msg-bubble-ai">${renderMarkdown(m.content)}</div></div>`
+  }
+  return ''
+}
+
+/** 渲染欢迎页/空白页 */
+function renderWelcomeHtml() {
+  if (!_messagesEl) return
+  const skillCards = BUILTIN_SKILLS.map(s => `
+    <button class="ast-skill-card" data-skill="${s.id}">
+      <span class="ast-skill-icon">${s.icon}</span>
+      <div class="ast-skill-info">
+        <strong>${s.name}</strong>
+        <span>${s.desc}</span>
+      </div>
+    </button>
+  `).join('')
+
+  _messagesEl.innerHTML = `
+    <div class="ast-welcome">
+      <div class="ast-welcome-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+          <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+          <path d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
+        </svg>
+      </div>
+      <h3>${_config?.assistantName || DEFAULT_NAME}</h3>
+      <p>${currentMode() === 'openclaw' ? '已进入 OpenClaw 模式，正在连接网关服务。' : '我可以帮你分析日志、排查问题、配置 OpenClaw。<br>点击下方技能卡片，AI 会自动调用工具完成任务。'}</p>
+      ${currentMode() === 'openclaw' ? '' : getAssistantGuideHtml()}
+      <div class="ast-skills-grid">${currentMode() === 'openclaw' ? '' : skillCards}</div>
+    </div>
+  `
+  if (_errorContext) renderErrorBanner()
 }
 
 export function cleanup() {

@@ -469,7 +469,7 @@ async function loadOpenClawSoul(agentId = 'main') {
 │                                             │
 │  ─── 当选择「ClawPanel 默认」时显示 ────    │
 │                                             │
-│  助手名称: [晴辰助手          ]             │
+│  助手名称: [我的AI助手          ]             │
 │  助手性格: [________________________]       │
 │                                             │
 └─────────────────────────────────────────────┘
@@ -479,7 +479,7 @@ async function loadOpenClawSoul(agentId = 'main') {
 
 | 维度 | 默认模式 | 附身模式 |
 |------|----------|----------|
-| 名称 | "晴辰助手" | IDENTITY.md 中的名称 |
+| 名称 | "我的AI助手" | IDENTITY.md 中的名称 |
 | 性格 | 简洁专业 | SOUL.md 定义的风格 |
 | 称呼用户 | "你" | USER.md 中的称呼（如"爸爸"） |
 | 行为规则 | ClawPanel 内置 | AGENTS.md 的规则体系 |
