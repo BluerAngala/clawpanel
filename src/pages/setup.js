@@ -246,7 +246,9 @@ function bindEvents(page, nodeOk, detectState) {
 
   // 进入面板
   page.querySelector('#btn-enter')?.addEventListener('click', () => {
-    window.location.hash = '/dashboard'
+    // 首次安装完毕，用户期待的是直接开始对话
+    // 如果没有配置模型，assistant 页面内部会处理进一步的跳转
+    window.location.hash = '/assistant'
   })
 
   // 一键初始化配置

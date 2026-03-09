@@ -2,7 +2,7 @@
 
 .ai-fab {
   position: fixed;
-  bottom: 24px;
+  bottom: 48px; /* 从 24px 上移到 48px，离底部更远一些 */
   right: 24px;
   z-index: 9000;
   width: 48px;

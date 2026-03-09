@@ -286,7 +286,12 @@ async function boot() {
       setDefaultRoute('/setup')
       navigate('/setup')
     } else {
-      if (window.location.hash === '#/setup') navigate('/dashboard')
+      // 每次打开软件，优先进入 AI 助手页面
+      // 如果当前是初始状态（无 hash）或者是从安装引导页过来的，则强制跳转
+      const currentHash = window.location.hash
+      if (!currentHash || currentHash === '#/' || currentHash === '#/setup' || currentHash === '#/dashboard') {
+        navigate('/assistant')
+      }
       setupGatewayBanner()
       startGatewayPoll()
 

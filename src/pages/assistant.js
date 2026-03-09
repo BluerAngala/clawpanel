@@ -1323,7 +1323,16 @@ function loadConfig() {
     _config = raw ? JSON.parse(raw) : null
   } catch { _config = null }
   if (!_config) {
-    _config = { baseUrl: '', apiKey: '', model: '', temperature: 0.7, tools: { terminal: false, fileOps: false, webSearch: false }, assistantName: DEFAULT_NAME, assistantPersonality: DEFAULT_PERSONALITY }
+    // 默认使用公益接口，实现开箱即用，降低用户安装焦虑
+    _config = {
+      baseUrl: QTCOOL.baseUrl,
+      apiKey: QTCOOL.defaultKey,
+      model: QTCOOL.models[0].id,
+      temperature: 0.7,
+      tools: { terminal: false, fileOps: false, webSearch: false },
+      assistantName: DEFAULT_NAME,
+      assistantPersonality: DEFAULT_PERSONALITY
+    }
   }
   if (!_config.assistantName) _config.assistantName = DEFAULT_NAME
   if (!_config.assistantPersonality) _config.assistantPersonality = DEFAULT_PERSONALITY
@@ -3830,6 +3839,27 @@ function stopIcon() {
 export async function render() {
   loadConfig()
   loadSessions()
+
+  // 智能进入检测：
+  // 1. 如果助手已配置，正常渲染
+  // 2. 如果助手未配置，但 OpenClaw 已配置模型，则不跳转（允许用户在助手页面进行首次设置或使用 OpenClaw 灵魂）
+  // 3. 只有当两者都完全没有模型配置时，才引导去 /models
+  if (!_config.model && !_config.apiKey && !_config.baseUrl) {
+    try {
+      const ocConfig = await api.readOpenclawConfig()
+      const hasOcModels = ocConfig?.models?.providers && Object.keys(ocConfig.models.providers).length > 0
+      
+      if (!hasOcModels) {
+        setTimeout(() => {
+          toast('请先配置 AI 助手或 OpenClaw 使用的模型', 'info')
+          window.location.hash = '/models'
+        }, 0)
+        return document.createElement('div')
+      }
+    } catch (e) {
+      // 读取失败时保守处理，不强制跳转
+    }
+  }
 
   // 确保数据目录存在（~/.openclaw/clawpanel/images/ 等）
   api.ensureDataDir().catch(e => console.warn('数据目录初始化失败:', e))

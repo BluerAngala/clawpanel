@@ -395,10 +395,23 @@ async fn get_local_version() -> Option<String> {
         .await
         .ok()?;
     let raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    // 适配 OpenClaw CLI 输出格式：
+    // 如果是 "OpenClaw 2026.3.8 (3caab92)"，我们只要 "2026.3.8"
+    // 如果是 "2026.3.8"，直接返回
+    let parts: Vec<&str> = raw.split_whitespace().collect();
+    if parts.len() >= 2 {
+        // 可能是 "OpenClaw 2026.3.8"
+        for part in parts {
+            if part.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                return Some(part.to_string());
+            }
+        }
+    }
+    
     raw.split_whitespace()
         .last()
         .filter(|s| !s.is_empty())
-        .map(String::from)
+        .map(|s| s.trim_matches(|c| c == '(' || c == ')').to_string())
 }
 
 /// 从 npm registry 获取最新版本号，超时 5 秒

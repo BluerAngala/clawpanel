@@ -8,7 +8,7 @@ let _loadId = 0
 let _currentCleanup = null
 let _initialized = false
 
-let _defaultRoute = '/dashboard'
+let _defaultRoute = '/assistant'
 
 export function registerRoute(path, loader) {
   routes[path] = loader
