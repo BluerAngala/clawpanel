@@ -41,7 +41,14 @@ const _invokeReady = isTauri
 
 // 简单缓存：避免页面切换时重复请求后端
 const _cache = new Map()
-const CACHE_TTL = 15000 // 15秒
+const CACHE_TTL = 30000 // 默认 30秒
+
+// 为特定命令定制缓存时间
+const COMMAND_TTL = {
+  'list_agents': 60000,        // 1分钟
+  'read_openclaw_config': 60000, // 1分钟
+  'get_services_status': 5000,  // 5秒
+}
 
 // 网络请求日志（用于调试）
 const _requestLogs = []
@@ -71,10 +78,11 @@ export function clearRequestLogs() {
   _requestLogs.length = 0
 }
 
-function cachedInvoke(cmd, args = {}, ttl = CACHE_TTL) {
+function cachedInvoke(cmd, args = {}, ttl) {
+  const finalTtl = ttl || COMMAND_TTL[cmd] || CACHE_TTL
   const key = cmd + JSON.stringify(args)
   const cached = _cache.get(key)
-  if (cached && Date.now() - cached.ts < ttl) {
+  if (cached && Date.now() - cached.ts < finalTtl) {
     logRequest(cmd, args, 0, true)
     return Promise.resolve(cached.val)
   }

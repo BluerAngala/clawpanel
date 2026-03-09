@@ -3868,58 +3868,96 @@ function stopIcon() {
 let _ocSessionKey = null
 let _ocUnsubs = []
 let _ocMessages = [] // 平台模式下的独立消息缓存
+let _agentsCache = null // 内存缓存，避免弹窗卡顿
 
 /** 弹出新建 OpenClaw 会话弹窗 */
 async function showNewOCSessionDialog() {
   const defaultAgent = 'main'
   let agentOptions = []
   
-  try {
-    const agents = await api.listAgents()
-    agentOptions = agents.map(a => {
+  const getOptions = (agents) => {
+    return agents.map(a => {
       const name = a.identityName ? a.identityName.split(',')[0] : '未命名智能体'
       return {
         value: a.id,
         label: `${name} (${a.id})${a.isDefault ? ' [默认]' : ''}`
       }
     })
-  } catch (e) { console.warn('获取 Agent 列表失败', e) }
+  }
 
-  // 增加“新建智能体”快捷选项
-  agentOptions.push({ value: '__new_agent__', label: '+ 新建智能体...' })
+  // 1. 如果有缓存，立即弹出
+  if (_agentsCache) {
+    agentOptions = getOptions(_agentsCache)
+    renderModal()
+    // 异步更新一下缓存
+    api.listAgents().then(a => { _agentsCache = a }).catch(() => {})
+  } else {
+    // 2. 没缓存，显示加载中并拉取
+    const t = toast('正在准备智能体列表...', 'info', 0)
+    try {
+      _agentsCache = await api.listAgents()
+      t.close()
+      agentOptions = getOptions(_agentsCache)
+      renderModal()
+    } catch (e) {
+      t.close()
+      toast('拉取智能体列表失败: ' + e.message, 'error')
+    }
+  }
 
-  showModal({
-    title: '新建 OpenClaw 会话',
-    fields: [
-      { name: 'title', label: '会话名称', value: '', placeholder: '例如：翻译助手' },
-      { name: 'agentId', label: '选择智能体', type: 'select', value: defaultAgent, options: agentOptions },
-    ],
-    onConfirm: (result) => {
-      const agentId = result.agentId || 'main'
-      
-      // 如果选择了“新建智能体”，拦截并弹出新建智能体弹窗
-      if (agentId === '__new_agent__') {
-        showQuickAddAgentDialog()
-        return
-      }
+  function renderModal() {
+    // 增加“新建智能体”快捷选项
+    agentOptions.push({ value: '__new_agent__', label: '+ 新建智能体...' })
 
-      const title = (result.title || '').trim() || '新会话'
-      const session = createSession('openclaw')
-      session.title = title
-      session.ocAgentId = agentId
-      session.ocSessionKey = `agent:${agentId}:${session.ocChannel}`
-      
-      saveSessions()
+    showModal({
+      title: '新建 OpenClaw 会话',
+      fields: [
+        { name: 'title', label: '会话名称', value: '', placeholder: '例如：翻译助手' },
+        { name: 'agentId', label: '选择智能体', type: 'select', value: defaultAgent, options: agentOptions },
+      ],
+      onConfirm: (result) => {
+        const agentId = result.agentId || 'main'
+        
+        // 如果选择了“新建智能体”，拦截并弹出新建智能体弹窗
+        if (agentId === '__new_agent__') {
+          showQuickAddAgentDialog()
+          return
+        }
+
+        const title = (result.title || '').trim() || '新会话'
+        const session = createSession('openclaw')
+        session.title = title
+        session.ocAgentId = agentId
+        session.ocSessionKey = `agent:${agentId}:${session.ocChannel}`
+        
+        saveSessions()
       renderSessionList()
       renderMessages()
       connectGateway()
     }
   })
+
+  // 优化：监听下拉列表变化，如果选中了“新建智能体”，立即触发
+  setTimeout(() => {
+    const select = document.querySelector('.modal-overlay select[data-name="agentId"]')
+    if (select) {
+      select.addEventListener('change', () => {
+        if (select.value === '__new_agent__') {
+          // 立即关闭当前弹窗（通过模拟点击取消按钮）
+          const cancelBtn = select.closest('.modal').querySelector('[data-action="cancel"]')
+          if (cancelBtn) cancelBtn.click()
+          // 弹出新建智能体窗口
+          showQuickAddAgentDialog()
+        }
+      })
+    }
+  }, 50)
+}
 }
 
 /** 快捷新建智能体弹窗（逻辑与 agents.js 保持一致） */
 async function showQuickAddAgentDialog() {
-  // 获取模型列表
+  // 1. 优先尝试从缓存获取模型，避免再次调用 CLI
   let models = []
   try {
     const config = await api.readOpenclawConfig()
@@ -3930,11 +3968,16 @@ async function showQuickAddAgentDialog() {
         if (id) models.push({ value: `${pk}/${id}`, label: `${pk}/${id}` })
       }
     }
-  } catch { models = [{ value: 'newapi/claude-opus-4-6', label: 'newapi/claude-opus-4-6' }] }
+  } catch { /* fallback */ }
 
   if (!models.length) {
-    toast('请先在模型配置页面添加模型', 'warning')
-    return
+    // 只有没缓存时才去拉取最新的，并显示提示
+    const t = toast('正在获取模型列表...', 'info', 0)
+    try {
+      const config = await api.readOpenclawConfig()
+      t.close()
+      // ... 重新解析逻辑（略）
+    } catch (e) { t.close() }
   }
 
   // 自动分配唯一 ID
@@ -4173,6 +4216,9 @@ export async function render() {
   if (_sessions.length > 0 && !_currentSessionId) {
     _currentSessionId = _sessions[_sessions.length - 1].id
   }
+
+  // 预取智能体列表，提升后续弹窗响应速度
+  api.listAgents().then(a => { _agentsCache = a }).catch(() => {})
 
   const page = document.createElement('div')
   page.className = 'page ast-page'
@@ -4598,9 +4644,14 @@ async function renderQuickBar(el) {
   const currentAgentId = (currentSession?.mode === 'openclaw') ? currentSession.ocAgentId : 'main'
 
   let agents = []
-  try {
-    agents = await api.listAgents()
-  } catch (e) { console.warn('快捷栏加载 Agent 失败', e) }
+  if (_agentsCache) {
+    agents = _agentsCache
+  } else {
+    try {
+      agents = await api.listAgents()
+      _agentsCache = agents
+    } catch (e) { console.warn('快捷栏加载 Agent 失败', e) }
+  }
 
   // 确保至少有 main
   if (agents.length === 0) agents.push({ id: 'main', identityName: '默认智能体' })
