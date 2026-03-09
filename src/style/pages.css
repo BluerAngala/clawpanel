@@ -249,29 +249,58 @@
 }
 
 /* 配置编辑区 */
-.config-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-xl);
-  margin-bottom: var(--space-lg);
-  transition: all var(--transition-normal);
-}
-
-.config-section:hover {
-  border-color: var(--border-focus);
-  background: var(--bg-card-hover);
-}
-
 .config-section-title {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   font-size: var(--font-size-lg);
   font-weight: 600;
-  margin-bottom: var(--space-md);
-  padding-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--border-secondary);
+  margin-bottom: 0;
+  padding: var(--space-md) var(--space-xl);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition-fast);
+}
+
+.config-section-title:hover {
+  background: var(--bg-secondary);
+}
+
+.config-section-title .chevron {
+  transition: transform var(--transition-normal);
+  color: var(--text-tertiary);
+}
+
+.config-section.expanded .config-section-title .chevron {
+  transform: rotate(180deg);
+}
+
+.config-section-content {
+  display: none;
+  padding: 0 var(--space-xl) var(--space-xl);
+  border-top: 1px solid var(--border-secondary);
+  margin-top: 0;
+}
+
+.config-section.expanded .config-section-content {
+  display: block;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 覆盖原有的 config-section 样式 */
+.config-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: 0; /* 改为 0，内边距移到标题和内容中 */
+  margin-bottom: var(--space-lg);
+  transition: all var(--transition-normal);
+  overflow: hidden;
 }
 
 /* ClawHub Skills */

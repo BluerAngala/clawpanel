@@ -6,6 +6,7 @@ import { api } from '../lib/tauri-api.js'
 import { toast } from '../components/toast.js'
 import { showModal, showConfirm } from '../components/modal.js'
 import { icon, statusIcon } from '../lib/icons.js'
+import { renderPromoCard } from '../components/promo-card.js'
 
 // API 接口类型选项
 const API_TYPES = [
@@ -17,6 +18,7 @@ const API_TYPES = [
 
 // 服务商快捷预设
 const PROVIDER_PRESETS = [
+  { key: 'siliconflow', label: '硅基流动', baseUrl: 'https://api.siliconflow.cn/v1', api: 'openai-completions' },
   { key: 'openai', label: 'OpenAI 官方', baseUrl: 'https://api.openai.com/v1', api: 'openai-completions' },
   { key: 'anthropic', label: 'Anthropic 官方', baseUrl: 'https://api.anthropic.com', api: 'anthropic-messages' },
   { key: 'deepseek', label: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1', api: 'openai-completions' },
@@ -71,43 +73,24 @@ export async function render() {
   page.className = 'page'
 
   page.innerHTML = `
-    <div class="page-header">
-      <h1 class="page-title">模型配置</h1>
-      <p class="page-desc">添加 AI 模型服务商，配置可用模型</p>
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-lg);margin-bottom:var(--space-lg)">
+      <div style="flex:1">
+        <h1 class="page-title">模型配置</h1>
+        <p class="page-desc">添加 AI 模型服务商，配置可用模型</p>
+      </div>
+      <div id="default-model-bar" style="min-width:280px;max-width:400px"></div>
     </div>
     <div class="config-actions">
       <button class="btn btn-primary btn-sm" id="btn-add-provider">+ 添加服务商</button>
+      <button class="btn btn-secondary btn-sm" id="btn-show-promo">${icon('gift', 14)} 公益计划</button>
+      <button class="btn btn-secondary btn-sm" id="btn-add-siliconflow">${icon('zap', 14)} 硅基流动 (推荐)</button>
       <button class="btn btn-secondary btn-sm" id="btn-undo" disabled>↩ 撤销</button>
     </div>
     <div class="form-hint" style="margin-bottom:var(--space-md)">
       服务商是模型的来源（如 OpenAI、DeepSeek 等）。每个服务商下可添加多个模型。
       标记为「主模型」的将优先使用，其余作为备选自动切换。配置修改后自动保存。
     </div>
-    <div id="qtcool-promo" style="margin-bottom:var(--space-lg);border-radius:12px;background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%);color:#fff;position:relative;overflow:hidden;box-shadow:0 4px 24px rgba(48,43,99,0.25)">
-      <div style="position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%);pointer-events:none"></div>
-      <div style="position:absolute;bottom:-30px;left:20px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(168,85,247,0.08) 0%,transparent 70%);pointer-events:none"></div>
-      <div style="padding:20px 24px 16px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
-        <div style="flex:1;min-width:240px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <span style="font-size:20px">${icon('gift', 22)}</span>
-            <span style="font-weight:700;font-size:16px;letter-spacing:0.3px">ClawPanel 公益 AI 接口计划</span>
-          </div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.65);line-height:1.7">
-            Token 费用？我们帮你出了。调用成本由项目组内部承担，GPT-5 全系列模型开箱即用。<br>
-            无需注册、无需付费、支持 OpenAI 兼容接口 — 点击即享。
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end">
-          <button class="btn btn-sm" id="btn-qtcool-oneclick" style="background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;font-weight:600;border:none;padding:8px 22px;font-size:13px;white-space:nowrap;border-radius:8px;box-shadow:0 2px 12px rgba(99,102,241,0.4);cursor:pointer;transition:transform 0.15s">${icon('zap', 14)} 一键添加全部模型</button>
-          <div style="display:flex;gap:14px;font-size:11px">
-            <a href="https://gpt.qt.cool/checkin" target="_blank" style="color:rgba(168,133,247,0.9);text-decoration:none">${icon('target', 12)} 签到领密钥</a>
-            <a href="${QTCOOL.usageUrl}${QTCOOL.defaultKey}" target="_blank" style="color:rgba(168,133,247,0.9);text-decoration:none">${icon('bar-chart', 12)} 用量查询</a>
-            <a href="https://claw.qt.cool/" target="_blank" style="color:rgba(168,133,247,0.9);text-decoration:none">${icon('home', 12)} 官网</a>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="default-model-bar"></div>
+    <div id="promo-container"></div>
     <div style="margin-bottom:var(--space-md)">
       <input class="form-input" id="model-search" placeholder="搜索模型（按 ID 或名称过滤）" style="max-width:360px">
     </div>
@@ -117,7 +100,7 @@ export async function render() {
     </div>
   `
 
-  const state = { config: null, search: '', undoStack: [] }
+  const state = { config: null, search: '', undoStack: [], promoMode: 'default' }
   // 非阻塞：先返回 DOM，后台加载数据
   loadConfig(page, state)
   bindTopActions(page, state)
@@ -136,10 +119,187 @@ async function loadConfig(page, state) {
   try {
     state.config = await api.readOpenclawConfig()
     renderDefaultBar(page, state)
+    renderPromo(page, state)
     renderProviders(page, state)
   } catch (e) {
     listEl.innerHTML = '<div style="color:var(--error);padding:20px">加载配置失败: ' + e + '</div>'
     toast('加载配置失败: ' + e, 'error')
+  }
+}
+
+// 渲染推广/配置卡片
+function renderPromo(page, state) {
+  const container = page.querySelector('#promo-container')
+  if (!container) return
+
+  if (state.promoMode === 'siliconflow') {
+    container.innerHTML = renderPromoCard({
+      id: 'siliconflow-promo',
+      title: '配置硅基流动 (SiliconFlow)',
+      iconName: 'zap',
+      desc: '输入您的 API Key 以自动获取并配置模型。SiliconFlow 提供高性能的开源模型托管服务。',
+      gradient: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)',
+      extra: `
+        <div style="margin-top:12px">
+          <input class="form-input" id="sf-api-key" placeholder="输入 sk-..." style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;width:100%;max-width:400px;padding:10px 14px;border-radius:var(--radius-md)">
+        </div>
+      `,
+      actions: [
+        { id: 'btn-sf-confirm', label: '一键配置全部模型', icon: 'zap', primary: true }
+      ],
+      links: [
+        { href: 'https://cloud.siliconflow.cn/i/WFoChvZf', label: '获取 API Key', icon: 'key' },
+        { href: 'https://cloud.siliconflow.cn/me/expensebill', label: '用量查询', icon: 'bar-chart' },
+        { href: 'https://siliconflow.cn/', label: '官网', icon: 'home' }
+      ]
+    })
+
+    // 绑定事件
+    container.querySelector('#btn-sf-confirm').onclick = () => {
+      const apiKey = container.querySelector('#sf-api-key').value.trim()
+      if (!apiKey) { toast('请输入 API Key', 'warning'); return }
+      doAddSiliconFlow(page, state, apiKey)
+    }
+    // 自动聚焦
+    container.querySelector('#sf-api-key')?.focus()
+  } else {
+    // 默认公益计划卡片
+    container.innerHTML = renderPromoCard({
+      id: 'qtcool-promo',
+      title: 'ClawPanel 公益 AI 接口计划',
+      iconName: 'gift',
+      desc: 'Token 费用？我们帮你出了。调用成本由项目组内部承担，GPT-5 全系列模型开箱即用。<br>无需注册、无需付费、支持 OpenAI 兼容接口 — 点击即享。',
+      gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+      actions: [
+        { id: 'btn-qtcool-oneclick', label: '一键添加全部模型', icon: 'zap', primary: true }
+      ],
+      links: [
+        { href: 'https://gpt.qt.cool/checkin', label: '签到领密钥', icon: 'target' },
+        { href: `${QTCOOL.usageUrl}${QTCOOL.defaultKey}`, label: '用量查询', icon: 'bar-chart' },
+        { href: 'https://claw.qt.cool/', label: '官网', icon: 'home' }
+      ]
+    })
+
+    // 绑定一键添加事件
+    container.querySelector('#btn-qtcool-oneclick').onclick = () => handleQtCoolOneClick(page, state)
+  }
+}
+
+async function handleQtCoolOneClick(page, state) {
+  if (!state.config) { toast('配置未加载完成，请稍候', 'warning'); return }
+
+  const btn = page.querySelector('#btn-qtcool-oneclick')
+  btn.textContent = '获取模型列表...'
+  btn.disabled = true
+
+  // 动态获取模型列表，失败则用静态 fallback
+  let models = QTCOOL.models
+  try {
+    const resp = await fetch(QTCOOL.baseUrl + '/models', {
+      headers: { 'Authorization': 'Bearer ' + QTCOOL.defaultKey },
+      signal: AbortSignal.timeout(8000)
+    })
+    if (resp.ok) {
+      const data = await resp.json()
+      if (data.data && data.data.length) {
+        models = data.data.map(m => ({
+          id: m.id, name: m.id, contextWindow: 128000,
+          reasoning: m.id.includes('codex')
+        })).sort((a, b) => b.id.localeCompare(a.id))
+      }
+    }
+  } catch { /* use fallback */ }
+
+  btn.innerHTML = `${icon('zap', 14)} 一键添加全部模型`
+  btn.disabled = false
+
+  pushUndo(state)
+  if (!state.config.models) state.config.models = {}
+  if (!state.config.models.providers) state.config.models.providers = {}
+
+  const existing = state.config.models.providers[QTCOOL.providerKey]
+  if (existing) {
+    const existingIds = new Set((existing.models || []).map(m => typeof m === 'string' ? m : m.id))
+    let added = 0
+    for (const m of models) {
+      if (!existingIds.has(m.id)) {
+        existing.models.push({ ...m })
+        added++
+      }
+    }
+    toast(added ? `已添加 ${added} 个新模型到 qtcool` : 'qtcool 模型已是最新', added ? 'success' : 'info')
+  } else {
+    state.config.models.providers[QTCOOL.providerKey] = {
+      baseUrl: QTCOOL.baseUrl,
+      apiKey: QTCOOL.defaultKey,
+      api: QTCOOL.api,
+      models: models.map(m => ({ ...m })),
+    }
+    if (!getCurrentPrimary(state.config)) {
+      setPrimary(state, QTCOOL.providerKey + '/' + models[0].id)
+    }
+    toast('已添加 gpt.qt.cool（' + models.length + ' 个模型）', 'success')
+  }
+  renderProviders(page, state)
+  renderDefaultBar(page, state)
+  updateUndoBtn(page, state)
+  autoSave(state)
+}
+
+// 实际执行硅基流动添加逻辑
+async function doAddSiliconFlow(page, state, apiKey) {
+  const providerKey = 'siliconflow'
+  const baseUrl = 'https://api.siliconflow.cn/v1'
+
+  toast('正在获取硅基流动模型列表...', 'info')
+  try {
+    const remoteIds = await api.listRemoteModels(baseUrl, apiKey)
+    if (!remoteIds || !remoteIds.length) {
+      toast('获取模型列表失败或列表为空', 'error')
+      return
+    }
+
+    pushUndo(state)
+    if (!state.config.models) state.config.models = { mode: 'replace', providers: {} }
+    if (!state.config.models.providers) state.config.models.providers = {}
+
+    const models = remoteIds.map(id => ({
+      id,
+      name: id,
+      contextWindow: 128000,
+      reasoning: id.toLowerCase().includes('thought') || id.toLowerCase().includes('r1') || id.toLowerCase().includes('qwq')
+    }))
+
+    state.config.models.providers[providerKey] = {
+      baseUrl,
+      apiKey,
+      api: 'openai-completions',
+      models
+    }
+
+    // 优先选择 Qwen/Qwen3.5-4B
+    const userPriority = 'Qwen/Qwen3.5-4B'
+    const hasUserPriority = remoteIds.includes(userPriority)
+
+    if (hasUserPriority) {
+      setPrimary(state, `${providerKey}/${userPriority}`)
+    } else {
+      const similar = remoteIds.find(id => id.includes('Qwen3.5')) || remoteIds.find(id => id.includes('Qwen2.5'))
+      if (similar) {
+        setPrimary(state, `${providerKey}/${similar}`)
+      }
+    }
+
+    state.activeProvider = providerKey
+    state.promoMode = 'default' // 完成后切回默认
+    renderPromo(page, state)
+    renderProviders(page, state)
+    renderDefaultBar(page, state)
+    updateUndoBtn(page, state)
+    autoSave(state)
+    toast(`已成功添加硅基流动及 ${models.length} 个模型`, 'success')
+  } catch (e) {
+    toast('添加失败: ' + e, 'error')
   }
 }
 
@@ -166,24 +326,28 @@ function getApiTypeLabel(apiType) {
 // 渲染当前主模型状态栏
 function renderDefaultBar(page, state) {
   const bar = page.querySelector('#default-model-bar')
+  if (!bar) return
   const primary = getCurrentPrimary(state.config)
   const allModels = collectAllModels(state.config)
   const fallbacks = allModels.filter(m => m.full !== primary).map(m => m.full)
 
   bar.innerHTML = `
-    <div class="config-section" style="margin-bottom:var(--space-lg)">
-      <div class="config-section-title">当前生效配置</div>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div>
-          <span style="font-size:var(--font-size-sm);color:var(--text-tertiary)">主模型：</span>
-          <span style="font-family:var(--font-mono);font-size:var(--font-size-sm);color:${primary ? 'var(--success)' : 'var(--error)'}">${primary || '未配置'}</span>
-        </div>
-        <div>
-          <span style="font-size:var(--font-size-sm);color:var(--text-tertiary)">备选模型：</span>
-          <span style="font-size:var(--font-size-sm);color:var(--text-secondary)">${fallbacks.length ? fallbacks.join(', ') : '无'}</span>
-        </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border-primary);border-radius:var(--radius-md);padding:10px 14px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:${primary ? 'var(--success)' : 'var(--error)'}"></div>
+      <div style="font-size:var(--font-size-xs);color:var(--text-tertiary);margin-bottom:6px;font-weight:600;display:flex;align-items:center;gap:6px">
+        ${icon('check-circle', 12)} 当前生效配置
       </div>
-      <div class="form-hint" style="margin-top:6px">主模型不可用时，系统会自动切换到备选模型</div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:var(--font-size-xs);color:var(--text-tertiary);white-space:nowrap">主模型:</span>
+          <span style="font-family:var(--font-mono);font-size:var(--font-size-xs);color:${primary ? 'var(--text-primary)' : 'var(--error)'};font-weight:600;word-break:break-all">${primary || '未配置'}</span>
+        </div>
+        ${fallbacks.length ? `
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <span style="font-size:var(--font-size-xs);color:var(--text-tertiary);white-space:nowrap">备选:</span>
+          <span style="font-size:var(--font-size-xs);color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${fallbacks.join(', ')}">${fallbacks.length} 个模型已就绪</span>
+        </div>` : ''}
+      </div>
     </div>
   `
 }
@@ -260,6 +424,7 @@ function renderProviders(page, state) {
   listEl.innerHTML = keys.map(key => {
     const p = providers[key]
     const models = p.models || []
+    const isExpanded = state.activeProvider === key
     const filtered = search
       ? models.filter((m) => {
           const id = (typeof m === 'string' ? m : m.id).toLowerCase()
@@ -270,9 +435,10 @@ function renderProviders(page, state) {
     const sorted = sortModels(filtered, sortBy)
     const hiddenCount = models.length - sorted.length
     return `
-      <div class="config-section" data-provider="${key}">
-        <div class="config-section-title" style="display:flex;justify-content:space-between;align-items:center">
-          <span>${key} <span style="font-size:var(--font-size-xs);color:var(--text-tertiary);font-weight:400">${getApiTypeLabel(p.api)} · ${models.length} 个模型</span></span>
+      <div class="config-section ${isExpanded ? 'expanded' : ''}" data-provider="${key}">
+        <div class="config-section-title" data-action="toggle-provider">
+          <span class="chevron" style="margin-right:8px;display:flex">${icon('chevron-down', 16)}</span>
+          <span style="flex:1">${key} <span style="font-size:var(--font-size-xs);color:var(--text-tertiary);font-weight:400">${getApiTypeLabel(p.api)} · ${models.length} 个模型</span></span>
           <div style="display:flex;gap:8px">
             <button class="btn btn-sm btn-secondary" data-action="edit-provider">编辑</button>
             <button class="btn btn-sm btn-secondary" data-action="add-model">+ 模型</button>
@@ -280,28 +446,29 @@ function renderProviders(page, state) {
             <button class="btn btn-sm btn-danger" data-action="delete-provider">删除</button>
           </div>
         </div>
-        ${models.length >= 2 ? `
-        <div style="display:flex;gap:6px;margin-bottom:var(--space-sm);align-items:center">
-          <button class="btn btn-sm btn-secondary" data-action="batch-test">批量测试</button>
-          <button class="btn btn-sm btn-secondary" data-action="select-all">全选</button>
-          <button class="btn btn-sm btn-danger" data-action="batch-delete">批量删除</button>
-          <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-            <span style="font-size:var(--font-size-xs);color:var(--text-tertiary)">排序:</span>
-            <select class="form-input" data-action="sort-models" style="padding:4px 8px;font-size:var(--font-size-xs);width:auto">
-              <option value="default">默认顺序 (拖拽调整)</option>
-              <option value="name-asc">名称 A-Z (固化到底层)</option>
-              <option value="name-desc">名称 Z-A (固化到底层)</option>
-              <option value="latency-asc">延迟 低→高 (固化到底层)</option>
-              <option value="latency-desc">延迟 高→低 (固化到底层)</option>
-              <option value="context-asc">上下文 小→大 (固化到底层)</option>
-              <option value="context-desc">上下文 大→小 (固化到底层)</option>
-            </select>
-            <button class="btn btn-sm btn-secondary" data-action="apply-sort" style="display:none">保存当前排序</button>
+        <div class="config-section-content">
+          ${models.length >= 2 ? `
+          <div style="display:flex;gap:6px;margin-bottom:var(--space-sm);align-items:center;padding-top:var(--space-md)">
+            <button class="btn btn-sm btn-secondary" data-action="batch-test">批量测试</button>
+            <button class="btn btn-sm btn-secondary" data-action="select-all">全选</button>
+            <button class="btn btn-sm btn-danger" data-action="batch-delete">批量删除</button>
+            <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+              <span style="font-size:var(--font-size-xs);color:var(--text-tertiary)">排序:</span>
+              <select class="form-input" data-action="sort-models" style="padding:4px 8px;font-size:var(--font-size-xs);width:auto">
+                <option value="default">默认顺序 (拖拽调整)</option>
+                <option value="name-asc">名称 A-Z (固化到底层)</option>
+                <option value="name-desc">名称 Z-A (固化到底层)</option>
+                <option value="latency-asc">延迟 低→高 (固化到底层)</option>
+                <option value="latency-desc">延迟 高→低 (固化到底层)</option>
+                <option value="context-asc">上下文 小→大 (固化到底层)</option>
+                <option value="context-desc">上下文 大→小 (固化到底层)</option>
+              </select>
+            </div>
+          </div>` : ''}
+          <div class="provider-models">
+            ${renderModelCards(key, sorted, primary, search)}
+            ${hiddenCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--text-tertiary);padding:4px 0">已隐藏 ${hiddenCount} 个不匹配的模型</div>` : ''}
           </div>
-        </div>` : ''}
-        <div class="provider-models">
-          ${renderModelCards(key, sorted, primary, search)}
-          ${hiddenCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--text-tertiary);padding:4px 0">已隐藏 ${hiddenCount} 个不匹配的模型</div>` : ''}
         </div>
       </div>
     `
@@ -585,8 +752,8 @@ function bindProviderButtons(listEl, page, state) {
     })
   })
 
-  // 绑定按钮
-  listEl.querySelectorAll('button[data-action], input[data-action]').forEach(btn => {
+  // 绑定按钮和标题
+  listEl.querySelectorAll('[data-action]').forEach(btn => {
     const action = btn.dataset.action
     const section = btn.closest('[data-provider]')
     if (!section) return
@@ -595,8 +762,8 @@ function bindProviderButtons(listEl, page, state) {
     if (!provider) return
     const card = btn.closest('.model-card')
 
-        // checkbox 改变时不需要阻止冒泡，由 handleAction 内部处理
-    if (btn.type === 'checkbox') {
+    // checkbox 改变时不需要阻止冒泡，由 handleAction 内部处理
+    if (btn.tagName === 'INPUT' && btn.type === 'checkbox') {
       btn.onchange = (e) => {
         handleAction(action, btn, card, section, providerKey, provider, page, state)
       }
@@ -612,6 +779,10 @@ function bindProviderButtons(listEl, page, state) {
 // 统一处理按钮动作
 async function handleAction(action, btn, card, section, providerKey, provider, page, state) {
   switch (action) {
+    case 'toggle-provider':
+      state.activeProvider = state.activeProvider === providerKey ? null : providerKey
+      renderProviders(page, state)
+      break
     case 'edit-provider':
       editProvider(page, state, providerKey)
       break
@@ -743,70 +914,22 @@ function bindTopActions(page, state) {
   page.querySelector('#btn-add-provider').onclick = () => addProvider(page, state)
   page.querySelector('#btn-undo').onclick = () => undo(page, state)
 
-  // gpt.qt.cool 一键添加（动态获取模型列表）
-  page.querySelector('#btn-qtcool-oneclick').onclick = async () => {
-    if (!state.config) { toast('配置未加载完成，请稍候', 'warning'); return }
-
-    const btn = page.querySelector('#btn-qtcool-oneclick')
-    btn.textContent = '获取模型列表...'
-    btn.disabled = true
-
-    // 动态获取模型列表，失败则用静态 fallback
-    let models = QTCOOL.models
-    try {
-      const resp = await fetch(QTCOOL.baseUrl + '/models', {
-        headers: { 'Authorization': 'Bearer ' + QTCOOL.defaultKey },
-        signal: AbortSignal.timeout(8000)
-      })
-      if (resp.ok) {
-        const data = await resp.json()
-        if (data.data && data.data.length) {
-          models = data.data.map(m => ({
-            id: m.id, name: m.id, contextWindow: 128000,
-            reasoning: m.id.includes('codex')
-          })).sort((a, b) => b.id.localeCompare(a.id))
-        }
-      }
-    } catch { /* use fallback */ }
-
-    btn.innerHTML = `${icon('zap', 14)} 一键添加全部模型`
-    btn.disabled = false
-
-    pushUndo(state)
-    if (!state.config.models) state.config.models = {}
-    if (!state.config.models.providers) state.config.models.providers = {}
-
-    const existing = state.config.models.providers[QTCOOL.providerKey]
-    if (existing) {
-      const existingIds = new Set((existing.models || []).map(m => typeof m === 'string' ? m : m.id))
-      let added = 0
-      for (const m of models) {
-        if (!existingIds.has(m.id)) {
-          existing.models.push({ ...m })
-          added++
-        }
-      }
-      toast(added ? `已添加 ${added} 个新模型到 qtcool` : 'qtcool 模型已是最新', added ? 'success' : 'info')
-    } else {
-      state.config.models.providers[QTCOOL.providerKey] = {
-        baseUrl: QTCOOL.baseUrl,
-        apiKey: QTCOOL.defaultKey,
-        api: QTCOOL.api,
-        models: models.map(m => ({ ...m })),
-      }
-      if (!getCurrentPrimary(state.config)) {
-        if (!state.config.agents) state.config.agents = {}
-        if (!state.config.agents.defaults) state.config.agents.defaults = {}
-        if (!state.config.agents.defaults.model) state.config.agents.defaults.model = {}
-        state.config.agents.defaults.model.primary = QTCOOL.providerKey + '/' + models[0].id
-      }
-      toast('已添加 gpt.qt.cool（' + models.length + ' 个模型）', 'success')
-    }
-    renderProviders(page, state)
-    renderDefaultBar(page, state)
-    updateUndoBtn(page, state)
-    autoSave(state)
+  // 公益计划方案切换
+  page.querySelector('#btn-show-promo').onclick = () => {
+    state.promoMode = 'default'
+    renderPromo(page, state)
   }
+
+  // 硅基流动一键添加
+  page.querySelector('#btn-add-siliconflow').onclick = () => addSiliconFlow(page, state)
+}
+
+// 硅基流动一键添加
+async function addSiliconFlow(page, state) {
+  state.promoMode = 'siliconflow'
+  renderPromo(page, state)
+  // 平滑滚动到顶部
+  page.scrollIntoView({ behavior: 'smooth' })
 }
 
 // 添加服务商（带预设快捷选择）
