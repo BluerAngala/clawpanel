@@ -353,7 +353,7 @@ npm install
 
 ```bash
 # 启动完整 Tauri 桌面应用
-./scripts/dev.sh
+pnpm run tauri dev
 
 # 仅启动 Vite 前端（浏览器调试，使用 mock 数据）
 ./scripts/dev.sh web
@@ -363,10 +363,10 @@ npm install
 
 ```powershell
 # 启动完整 Tauri 桌面应用
-npm run tauri dev
+pnpm run tauri dev
 
 # 仅启动 Vite 前端（浏览器调试，使用 mock 数据）
-npm run dev
+pnpm run dev
 ```
 
 ### 构建
@@ -391,10 +391,10 @@ npm run dev
 cd src-tauri && cargo check
 
 # 编译正式发布版本
-npm run tauri build
+pnpm run tauri build
 
 # 指定打包格式（NSIS 安装器）
-npm run tauri build -- --bundles nsis
+pnpm run tauri build -- --bundles nsis
 ```
 
 产物位于 `src-tauri/target/release/` 目录。

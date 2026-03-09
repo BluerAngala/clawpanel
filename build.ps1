@@ -63,8 +63,8 @@ if (-not (Test-Path $webview2Key)) {
 
 Write-Step "安装前端依赖"
 if (-not (Test-Path "node_modules")) {
-    npm ci --silent
-    if ($LASTEXITCODE -ne 0) { Write-Fail "npm ci 失败"; exit 1 }
+    pnpm install --silent
+    if ($LASTEXITCODE -ne 0) { Write-Fail "pnpm install 失败"; exit 1 }
     Write-Ok "依赖安装完成"
 } else {
     Write-Ok "依赖已存在，跳过"
@@ -86,10 +86,10 @@ $startTime = Get-Date
 
 if ($Debug) {
     Write-Step "Debug 构建（不打包安装器）"
-    npm run tauri build -- --debug
+    pnpm run tauri build -- --debug
 } else {
     Write-Step "Release 构建（生成 Windows 安装包）"
-    npm run tauri build
+    pnpm run tauri build
 }
 
 if ($LASTEXITCODE -ne 0) {

@@ -373,17 +373,15 @@ mod platform {
 
         let enhanced = crate::commands::enhanced_path();
 
-        // 用 cmd /c start 打开新的可见终端窗口运行 Gateway
-        // 父 cmd 用 CREATE_NO_WINDOW 避免自身闪窗，子窗口由 start 创建
+        // 默认使用 CREATE_NO_WINDOW 隐藏窗口启动，不再弹出黑窗口
+        // 注意：必须重定向 stdout/stderr 否则 Node.js 在无窗口模式下写入会报 EBADF 错误
         const CREATE_NO_WINDOW: u32 = 0x08000000;
-        let start_cmd = format!(
-            "start \"{}\" cmd /k openclaw gateway",
-            GATEWAY_WINDOW_TITLE
-        );
-
+        
         std::process::Command::new("cmd")
-            .raw_arg(format!("/c {}", start_cmd))
+            .args(["/c", "openclaw", "gateway"])
             .env("PATH", &enhanced)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
             .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("启动 Gateway 失败: {e}"))?;

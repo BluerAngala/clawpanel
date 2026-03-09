@@ -3,7 +3,7 @@
  */
 import { api } from '../lib/tauri-api.js'
 import { toast } from '../components/toast.js'
-import { onGatewayChange } from '../lib/app-state.js'
+import { onGatewayChange, resetAutoRestart, startGatewayPoll } from '../lib/app-state.js'
 import { navigate } from '../router.js'
 
 let _unsubGw = null
@@ -311,10 +311,12 @@ function bindActions(page) {
 
     if (action === 'start-gw') {
       actionBtn.disabled = true; actionBtn.textContent = '启动中...'
+      resetAutoRestart() // 用户手动启动，重置守护状态
       try {
         await api.startService('ai.openclaw.gateway')
         toast('Gateway 启动指令已发送', 'success')
-        setTimeout(() => loadDashboardData(page), 2000)
+        startGatewayPoll(true) // 临时加快检测频率
+        setTimeout(() => loadDashboardData(page), 1500)
       } catch (err) { toast('启动失败: ' + err, 'error') }
       finally { actionBtn.disabled = false; actionBtn.textContent = '启动' }
     }

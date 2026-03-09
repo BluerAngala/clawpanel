@@ -119,7 +119,21 @@ export async function detectOpenclawStatus() {
 
     // 顺便检测 Gateway 运行状态
     if (services.status === 'fulfilled' && services.value?.length > 0) {
-      _setGatewayRunning(services.value[0]?.running === true)
+      const running = services.value[0]?.running === true
+      _setGatewayRunning(running)
+      
+      // 智能自动启动逻辑：
+      // 如果 OpenClaw 已就绪，Gateway 未运行，且用户没有明确手动停止过
+      // 则在加载时自动拉起 Gateway 服务，减少用户操作
+      if (_openclawReady && !running && !_userStopped && !_isUpgrading && isLocalInstance()) {
+        console.log('[guardian] 自动拉起已安装的 Gateway 服务...')
+        api.startService('ai.openclaw.gateway').then(() => {
+          // 启动后临时加快轮询频率，以便 UI 尽快显示运行中
+          startGatewayPoll(true)
+        }).catch(e => {
+          console.warn('[guardian] 自动拉起失败:', e)
+        })
+      }
     }
   } catch {
     _openclawReady = false
@@ -189,10 +203,17 @@ export async function refreshGatewayStatus() {
 }
 
 let _pollTimer = null
-/** 启动 Gateway 状态轮询（每 15 秒，避免过于频繁） */
-export function startGatewayPoll() {
-  if (_pollTimer) return
-  _pollTimer = setInterval(() => refreshGatewayStatus(), 15000)
+/** 启动 Gateway 状态轮询（每 15 秒，避免过于频繁；如果刚启动，则临时加快频率） */
+export function startGatewayPoll(fastMode = false) {
+  if (_pollTimer) clearInterval(_pollTimer)
+  const interval = fastMode ? 3000 : 15000
+  _pollTimer = setInterval(() => {
+    refreshGatewayStatus()
+    // 运行成功后切回慢速轮询
+    if (fastMode && _gatewayRunning) {
+      startGatewayPoll(false)
+    }
+  }, interval)
 }
 export function stopGatewayPoll() {
   if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null }

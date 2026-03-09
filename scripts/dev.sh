@@ -26,13 +26,13 @@ case "$MODE" in
     echo "   地址: http://localhost:1420"
     echo "   使用 mock 数据，适合调试前端逻辑"
     echo ""
-    npx vite --port 1420
+    pnpm vite --port 1420
     ;;
   tauri)
     echo "🖥️  启动 Tauri 桌面应用（完整模式）..."
     echo "   Vite + Rust 后端"
     echo ""
-    npm run tauri dev
+    pnpm run tauri dev
     ;;
   *)
     echo "用法: $0 [web|tauri]"

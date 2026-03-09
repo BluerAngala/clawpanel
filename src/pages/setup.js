@@ -11,30 +11,41 @@ import { icon, statusIcon } from '../lib/icons.js'
 
 export async function render() {
   const page = document.createElement('div')
-  page.className = 'page'
+  page.className = 'page setup-container'
 
   page.innerHTML = `
-    <div style="max-width:560px;margin:48px auto;text-align:center">
-      <div style="margin-bottom:var(--space-lg)">
-        <img src="/images/logo-brand.png" alt="ClawPanel" style="max-width:160px;width:100%;height:auto">
+    <div class="setup-card">
+      <div style="margin-bottom:var(--space-xl);text-align:center">
+        <img src="/images/logo-brand.png" alt="ClawPanel" style="max-width:140px;width:100%;height:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.1))">
       </div>
-      <h1 style="font-size:var(--font-size-xl);margin-bottom:var(--space-xs)">欢迎使用 ClawPanel</h1>
-      <p style="color:var(--text-secondary);margin-bottom:var(--space-xl);line-height:1.6">
-        OpenClaw AI Agent 框架的桌面管理面板
-      </p>
+      
+      <div style="text-align:center;margin-bottom:var(--space-xl)">
+        <h1 style="font-size:1.75rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:var(--space-xs);background:linear-gradient(135deg, var(--text-primary), var(--text-secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent">
+          欢迎开启 AI 时代
+        </h1>
+        <p style="color:var(--text-tertiary);font-size:var(--font-size-sm);line-height:1.6">
+          正在为您准备 OpenClaw 智能 Agent 运行环境
+        </p>
+      </div>
 
       <div id="setup-steps"></div>
 
-      <div style="margin-top:var(--space-lg)">
-        <button class="btn btn-secondary btn-sm" id="btn-recheck" style="min-width:120px">
+      <div style="margin-top:var(--space-xl);text-align:center;display:flex;justify-content:center;gap:12px">
+        <button class="btn btn-secondary btn-sm" id="btn-recheck" style="opacity:0.7">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:4px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-          重新检测
+          重新检测环境
+        </button>
+        <button class="btn btn-secondary btn-sm" id="btn-goto-assistant" style="opacity:0.7">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:4px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          获取 AI 帮助
         </button>
       </div>
     </div>
   `
 
   page.querySelector('#btn-recheck').addEventListener('click', () => runDetect(page))
+  page.querySelector('#btn-goto-assistant').addEventListener('click', () => { window.location.hash = '/assistant' })
+  
   runDetect(page)
   return page
 }
@@ -89,95 +100,66 @@ function renderSteps(page, { node, cliOk, config }) {
 
   // 第一步：Node.js
   html += `
-    <div class="config-section" style="text-align:left">
-      <div class="config-section-title" style="display:flex;align-items:center;gap:4px">
+    <div class="config-section" style="text-align:left;animation:fadeIn 0.5s ease">
+      <div class="config-section-title" style="display:flex;align-items:center;gap:6px">
         ${stepIcon(nodeOk)} Node.js 环境
       </div>
       ${nodeOk
-        ? `<p style="color:var(--success);font-size:var(--font-size-sm)">已安装 ${node.version || ''}</p>`
-        : `<p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-sm)">
-            OpenClaw 基于 Node.js 运行，请先安装。
-          </p>
-          <a class="btn btn-primary btn-sm" href="https://nodejs.org/" target="_blank" rel="noopener">下载 Node.js</a>
-          <span class="form-hint" style="margin-left:8px">安装后点击「重新检测」</span>
-          <div style="margin-top:var(--space-sm);padding:8px 12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs);color:var(--text-secondary);line-height:1.6">
-            <strong>已经装了但检测不到？</strong>
-            ${isMacPlatform()
-              ? `macOS 上从 Finder 启动可能找不到 Node.js。试试关掉 ClawPanel 后从终端启动：<br>
-                 <code style="background:var(--bg-secondary);padding:2px 6px;border-radius:3px;user-select:all">open /Applications/ClawPanel.app</code>`
-              : `安装 Node.js 后需要<strong>重启 ClawPanel</strong>，新的环境变量才能生效。`
-            }
-            <div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-              <button class="btn btn-secondary btn-sm" id="btn-scan-node" style="font-size:11px;padding:3px 10px">${icon('search', 12)} 自动扫描</button>
-              <span style="color:var(--text-tertiary)">或手动指定路径：</span>
+        ? `<p style="color:var(--success);font-size:var(--font-size-sm);margin-left:24px">已就绪 (${node.version || ''})</p>`
+        : `<div style="margin-left:24px">
+            <p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-sm)">
+              OpenClaw 基于 Node.js 运行，请先安装。
+            </p>
+            <div style="display:flex;gap:8px;align-items:center">
+              <a class="btn btn-primary btn-sm" href="https://nodejs.org/" target="_blank" rel="noopener">立即下载</a>
+              <button class="btn btn-secondary btn-sm" id="btn-scan-node" style="font-size:11px">${icon('search', 12)} 自动扫描</button>
             </div>
-            <div style="margin-top:6px;display:flex;gap:6px">
-              <input id="input-node-path" type="text" placeholder="${isMacPlatform() ? '/usr/local/bin' : 'F:\\\\AI\\\\Node'}"
-                style="flex:1;padding:4px 8px;border:1px solid var(--border-primary);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text-primary);font-size:11px;font-family:monospace">
-              <button class="btn btn-primary btn-sm" id="btn-check-path" style="font-size:11px;padding:3px 10px">检测</button>
-            </div>
-            <div id="scan-result" style="margin-top:6px;display:none"></div>
+            <div id="scan-result" style="margin-top:12px;display:none;padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs)"></div>
           </div>`
       }
     </div>
   `
 
-  // 第二步：OpenClaw CLI
+  // 第二步：OpenClaw & Gateway
   html += `
-    <div class="config-section" style="text-align:left;${nodeOk ? '' : 'opacity:0.4;pointer-events:none'}">
-      <div class="config-section-title" style="display:flex;align-items:center;gap:4px">
-        ${stepIcon(cliOk)} OpenClaw CLI
+    <div class="config-section" style="text-align:left;${nodeOk ? '' : 'opacity:0.4;pointer-events:none'};animation:fadeIn 0.5s ease 0.1s">
+      <div class="config-section-title" style="display:flex;align-items:center;gap:6px">
+        ${stepIcon(cliOk)} OpenClaw 系统
       </div>
       ${cliOk
-        ? `<p style="color:var(--success);font-size:var(--font-size-sm)">CLI 可用</p>`
+        ? `<p style="color:var(--success);font-size:var(--font-size-sm);margin-left:24px">核心服务已安装</p>`
         : renderInstallSection()
       }
     </div>
   `
-  // 第三步：配置文件
-  html += `
-    <div class="config-section" style="text-align:left;${cliOk ? '' : 'opacity:0.4;pointer-events:none'}">
-      <div class="config-section-title" style="display:flex;align-items:center;gap:4px">
-        ${stepIcon(config.installed)} 配置文件
-      </div>
-      ${config.installed
-        ? `<p style="color:var(--success);font-size:var(--font-size-sm)">配置文件位于 ${config.path || ''}</p>`
-        : `<p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-sm)">
-            配置文件不存在，点击下方按钮自动创建默认配置。
-          </p>
-          <button class="btn btn-primary btn-sm" id="btn-init-config">一键初始化配置</button>`
-      }
-    </div>
-  `
 
-  // AI 助手入口
-  html += `
-    <div class="config-section" style="text-align:left;margin-top:var(--space-md)">
-      <div class="config-section-title" style="display:flex;align-items:center;gap:6px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
-        晴辰助手
+  // 第三步：配置文件
+  if (cliOk) {
+    html += `
+      <div class="config-section" style="text-align:left;animation:fadeIn 0.5s ease 0.2s">
+        <div class="config-section-title" style="display:flex;align-items:center;gap:6px">
+          ${stepIcon(config.installed)} 运行环境配置
+        </div>
+        ${config.installed
+          ? `<p style="color:var(--success);font-size:var(--font-size-sm);margin-left:24px">配置已就绪</p>`
+          : `<div style="margin-left:24px">
+              <p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-sm)">
+                初次运行需要初始化配置文件。
+              </p>
+              <button class="btn btn-primary btn-sm" id="btn-init-config">一键初始化</button>
+            </div>`
+        }
       </div>
-      <p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-sm);line-height:1.5">
-        遇到安装问题？AI 助手可以帮你诊断和解决。配置好模型后，点击下方按钮${!allOk ? '，当前问题会自动发送给 AI 分析' : ''}。
-      </p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" id="btn-goto-assistant">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:4px"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
-          打开 AI 助手
-        </button>
-        ${!allOk ? `<button class="btn btn-primary btn-sm" id="btn-ask-ai-help">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:4px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          让 AI 帮我解决
-        </button>` : ''}
-      </div>
-    </div>
-  `
+    `
+  }
 
   // 全部就绪 → 进入面板
   if (allOk) {
     html += `
-      <div style="margin-top:var(--space-lg)">
-        <button class="btn btn-primary" id="btn-enter" style="min-width:200px">进入面板</button>
+      <div style="margin-top:var(--space-lg);animation:slideUp 0.5s ease">
+        <button class="btn btn-primary btn-lg" id="btn-enter" style="min-width:240px;box-shadow:0 4px 12px rgba(var(--primary-rgb), 0.3)">
+          开启 AI 探索
+        </button>
       </div>
     `
   }
@@ -187,91 +169,47 @@ function renderSteps(page, { node, cliOk, config }) {
 }
 
 function renderInstallSection() {
-  const isWin = navigator.platform?.startsWith('Win') || navigator.userAgent?.includes('Windows')
-  const isMac = navigator.platform?.startsWith('Mac') || navigator.userAgent?.includes('Macintosh')
   const isDesktop = !!window.__TAURI_INTERNALS__
 
-  let envHint = ''
-  if (isDesktop) {
-    envHint = `
-      <div style="margin-top:var(--space-sm);padding:10px 12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border-left:3px solid var(--warning);font-size:var(--font-size-xs);color:var(--text-secondary);line-height:1.7">
-        <strong style="color:var(--text-primary)">找不到已安装的 OpenClaw？</strong>
-        <p style="margin:6px 0 2px">ClawPanel 桌面版只能管理<strong>本机</strong>安装的 OpenClaw。以下环境中的安装无法被检测到：</p>
-        <ul style="margin:4px 0 8px 16px;padding:0">
-          ${isWin ? `
-            <li><strong>WSL (Windows 子系统)</strong> — OpenClaw 装在 WSL 里，Windows 侧无法访问</li>
-            <li><strong>Docker 容器</strong> — 容器内的安装与宿主机隔离</li>
-          ` : ''}
-          ${isMac ? `
-            <li><strong>Docker 容器</strong> — 容器内的安装与宿主机隔离</li>
-            <li><strong>远程服务器</strong> — 安装在其他机器上</li>
-          ` : ''}
-          ${!isWin && !isMac ? `
-            <li><strong>Docker 容器</strong> — 容器内的安装与宿主机隔离</li>
-          ` : ''}
-        </ul>
-        <details style="cursor:pointer">
-          <summary style="font-weight:600;color:var(--primary);margin-bottom:6px">
-            在对应环境中安装管理面板
-          </summary>
-          <div style="margin-top:8px">
-            ${isWin ? `
-              <div style="margin-bottom:10px">
-                <div style="font-weight:600;margin-bottom:4px">WSL 中使用 Web 版：</div>
-                <div style="margin-bottom:2px;opacity:0.8">打开 WSL 终端，一键部署 ClawPanel Web 版：</div>
-                <code style="display:block;background:var(--bg-secondary);padding:6px 10px;border-radius:4px;user-select:all;word-break:break-all">curl -fsSL https://raw.githubusercontent.com/qingchencloud/clawpanel/main/deploy.sh | bash</code>
-                <div style="margin-top:4px;opacity:0.7">部署后在浏览器访问 WSL 的 IP 即可管理。</div>
-              </div>
-            ` : ''}
+  return `
+    <div style="margin-left:24px">
+      <p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-sm)">
+        尚未检测到 OpenClaw。我们将自动为您配置核心服务与网关。
+      </p>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-primary btn-sm" id="btn-install" style="padding:8px 20px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          智能安装
+        </button>
+        <details style="font-size:var(--font-size-xs);color:var(--text-tertiary);cursor:pointer">
+          <summary>高级选项</summary>
+          <div style="margin-top:8px;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border-primary)">
             <div style="margin-bottom:10px">
-              <div style="font-weight:600;margin-bottom:4px">Docker 容器中使用：</div>
-              <div style="margin-bottom:2px;opacity:0.8">在容器内安装 OpenClaw + ClawPanel Web 版：</div>
-              <code style="display:block;background:var(--bg-secondary);padding:6px 10px;border-radius:4px;user-select:all;word-break:break-all;margin-bottom:4px">npm i -g @qingchencloud/openclaw-zh</code>
-              <code style="display:block;background:var(--bg-secondary);padding:6px 10px;border-radius:4px;user-select:all;word-break:break-all">curl -fsSL https://raw.githubusercontent.com/qingchencloud/clawpanel/main/deploy.sh | bash</code>
+              <label style="display:block;margin-bottom:4px">手动选择源</label>
+              <div style="display:flex;gap:12px">
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+                  <input type="radio" name="install-source" value="official" checked> 官方源
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+                  <input type="radio" name="install-source" value="chinese"> 备用源
+                </label>
+              </div>
             </div>
             <div>
-              <div style="font-weight:600;margin-bottom:4px">远程服务器：</div>
-              <div style="margin-bottom:2px;opacity:0.8">SSH 登录服务器后执行：</div>
-              <code style="display:block;background:var(--bg-secondary);padding:6px 10px;border-radius:4px;user-select:all;word-break:break-all">curl -fsSL https://raw.githubusercontent.com/qingchencloud/clawpanel/main/deploy.sh | bash</code>
+              <label style="display:block;margin-bottom:4px">npm 镜像源</label>
+              <select id="registry-select" style="width:100%;padding:4px;font-size:11px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-primary)">
+                <option value="https://registry.npmmirror.com">淘宝镜像 (推荐)</option>
+                <option value="https://registry.npmjs.org">官方源</option>
+              </select>
             </div>
           </div>
         </details>
-        <div style="margin-top:6px;opacity:0.7">
-          或者，你也可以在本机重新安装 OpenClaw（使用下方的「一键安装」）。
-        </div>
-      </div>`
-  }
-
-  return `
-    <p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-sm)">
-      选择版本后点击安装，将自动执行 npm 全局安装。
-    </p>
-    <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-sm)">
-      <label class="setup-source-option" style="flex:1;cursor:pointer">
-        <input type="radio" name="install-source" value="chinese" checked style="margin-right:6px">
-        <div>
-          <div style="font-weight:600;font-size:var(--font-size-sm)">汉化优化版（推荐）</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-tertiary)">@qingchencloud/openclaw-zh</div>
-        </div>
-      </label>
-      <label class="setup-source-option" style="flex:1;cursor:pointer">
-        <input type="radio" name="install-source" value="official" style="margin-right:6px">
-        <div>
-          <div style="font-weight:600;font-size:var(--font-size-sm)">官方原版</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-tertiary)">openclaw</div>
-        </div>
-      </label>
+      </div>
+      ${isDesktop ? `
+        <div style="margin-top:var(--space-sm);font-size:11px;color:var(--text-tertiary);line-height:1.5">
+          * 将自动尝试官方源，失败时自动切换至备用源并安装网关服务。
+        </div>` : ''}
     </div>
-    <div style="margin-bottom:var(--space-sm)">
-      <label style="font-size:var(--font-size-xs);color:var(--text-tertiary);display:block;margin-bottom:4px">npm 镜像源</label>
-      <select id="registry-select" style="width:100%;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-primary);background:var(--bg-secondary);color:var(--text-primary);font-size:var(--font-size-sm)">
-        <option value="https://registry.npmmirror.com">淘宝镜像（推荐国内用户）</option>
-        <option value="https://registry.npmjs.org">npm 官方源</option>
-        <option value="https://repo.huaweicloud.com/repository/npm/">华为云镜像</option>
-      </select>
-    </div>
-    <button class="btn btn-primary btn-sm" id="btn-install">一键安装</button>
-    ${envHint}
   `
 }
 
@@ -396,12 +334,25 @@ function bindEvents(page, nodeOk, detectState) {
   if (!installBtn || !nodeOk) return
 
   installBtn.addEventListener('click', async () => {
-    const source = page.querySelector('input[name="install-source"]:checked')?.value || 'chinese'
-    const registry = page.querySelector('#registry-select')?.value
-    const modal = showUpgradeModal()
+    // 检查是否有手动选定的源，如果没有则使用智能模式
+    const manualSource = page.querySelector('input[name="install-source"]:checked')?.value
+    const manualRegistry = page.querySelector('#registry-select')?.value
+    
+    const modal = showUpgradeModal('正在安装 OpenClaw')
     let unlistenLog, unlistenProgress
 
     setUpgrading(true)
+    
+    // 内部执行安装的辅助函数
+    const runInstall = async (source, registry) => {
+      if (registry) {
+        modal.appendLog(`设置 npm 镜像源: ${registry}`)
+        try { await api.setNpmRegistry(registry) } catch {}
+      }
+      modal.appendLog(`正在尝试从 ${source === 'official' ? '官方源' : '备用源'} 安装...`)
+      return await api.upgradeOpenclaw(source)
+    }
+
     try {
       if (window.__TAURI_INTERNALS__) {
         try {
@@ -409,73 +360,72 @@ function bindEvents(page, nodeOk, detectState) {
           unlistenLog = await listen('upgrade-log', (e) => modal.appendLog(e.payload))
           unlistenProgress = await listen('upgrade-progress', (e) => modal.setProgress(e.payload))
         } catch { /* Web 模式无 Tauri event */ }
-      } else {
-        modal.appendLog('Web 模式：安装日志不可用，请等待完成...')
       }
 
-      // 先设置镜像源
-      if (registry) {
-        modal.appendLog(`设置 npm 镜像源: ${registry}`)
-        try { await api.setNpmRegistry(registry) } catch {}
+      let successMsg = ''
+      
+      // 1. 尝试安装 OpenClaw
+      try {
+        // 如果用户手动指定了源，直接用手动源；否则先试官方源
+        const initialSource = manualSource || 'official'
+        const initialRegistry = manualRegistry || (initialSource === 'official' ? 'https://registry.npmjs.org' : 'https://registry.npmmirror.com')
+        successMsg = await runInstall(initialSource, initialRegistry)
+      } catch (e) {
+        // 如果是智能模式且官方源失败，自动切备用源
+        if (!manualSource) {
+          modal.appendLog('⚠️ 官方源安装失败，正在自动切换至备用源重试...')
+          modal.setProgress(10) // 重置部分进度
+          successMsg = await runInstall('chinese', 'https://registry.npmmirror.com')
+        } else {
+          throw e // 手动模式失败直接抛出
+        }
       }
 
-      const msg = await api.upgradeOpenclaw(source)
-      modal.setDone(msg)
+      modal.setDone(successMsg)
 
-      // 安装成功后自动安装 Gateway
+      // 2. 自动安装 Gateway 服务
       modal.appendLog('正在安装 Gateway 服务...')
       try {
         await api.installGateway()
-        modal.appendHtmlLog(`${statusIcon('ok', 14)} Gateway 服务已安装`)
+        modal.appendHtmlLog(`${statusIcon('ok', 14)} Gateway 服务已就绪`)
       } catch (e) {
-        modal.appendHtmlLog(`${statusIcon('warn', 14)} Gateway 安装失败: ${e}`)
+        modal.appendHtmlLog(`${statusIcon('warn', 14)} Gateway 自动安装失败，建议稍后在设置中手动安装`)
       }
 
-      // 确保 openclaw.json 有关键默认值，否则 Gateway 启动不了或功能受限
+      // 3. 自动配置优化
       try {
         const config = await api.readOpenclawConfig()
         if (config) {
           let patched = false
           if (!config.gateway) config.gateway = {}
-          if (!config.gateway.mode) {
-            config.gateway.mode = 'local'
-            patched = true
-            modal.appendHtmlLog(`${statusIcon('ok', 14)} 已设置 Gateway 运行模式为 local`)
+          if (!config.gateway.mode) { config.gateway.mode = 'local'; patched = true }
+          if (!config.tools) config.tools = { profile: 'full', sessions: { visibility: 'all' } }; patched = true
+          if (patched) {
+            await api.writeOpenclawConfig(config)
+            modal.appendHtmlLog(`${statusIcon('ok', 14)} 已自动优化运行配置`)
           }
-          if (!config.tools || config.tools.profile !== 'full') {
-            config.tools = { profile: 'full', sessions: { visibility: 'all' }, ...(config.tools || {}) }
-            config.tools.profile = 'full'
-            if (!config.tools.sessions) config.tools.sessions = {}
-            config.tools.sessions.visibility = 'all'
-            patched = true
-            modal.appendHtmlLog(`${statusIcon('ok', 14)} 已开启 Agent 工具全部权限`)
-          }
-          if (patched) await api.writeOpenclawConfig(config)
         }
-      } catch (e) {
-        modal.appendHtmlLog(`${statusIcon('warn', 14)} 自动配置失败: ${e}`)
-      }
+      } catch {}
 
-      toast('OpenClaw 安装成功', 'success')
+      toast('安装成功', 'success')
       setTimeout(() => window.location.reload(), 1500)
     } catch (e) {
       const errStr = String(e)
       modal.appendLog(errStr)
-      // 等待 Tauri 事件队列中残留的 npm 日志行被 JS 处理完毕，
-      // 确保 getLogText() 包含完整输出（含 exit code / ENOENT 等关键行）
       await new Promise(r => setTimeout(r, 150))
       const fullLog = modal.getLogText() + '\n' + errStr
       const diagnosis = diagnoseInstallError(fullLog)
       modal.setError(diagnosis.title)
-      if (diagnosis.hint) modal.appendLog('')
+      
       if (diagnosis.hint) modal.appendHtmlLog(`${statusIcon('info', 14)} ${diagnosis.hint}`)
-      if (diagnosis.command) modal.appendHtmlLog(`${icon('clipboard', 14)} ${diagnosis.command}`)
+      
+      // 自动打开 AI 助手帮助解决
       if (window.__openAIDrawerWithError) {
         window.__openAIDrawerWithError({
           title: diagnosis.title,
           error: fullLog,
-          scene: '初始安装 OpenClaw',
-          hint: diagnosis.hint,
+          scene: '智能安装失败',
+          hint: '建议尝试手动指定备用源安装，或让 AI 助手协助诊断网络环境。',
         })
       }
     } finally {

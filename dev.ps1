@@ -18,7 +18,7 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
 # 检查依赖
 if (-not (Test-Path "node_modules")) {
     Write-Host "📦 安装前端依赖..." -ForegroundColor Yellow
-    npm install
+    pnpm install
 }
 
 if (-not (Test-Path "src-tauri/target")) {
@@ -27,4 +27,4 @@ if (-not (Test-Path "src-tauri/target")) {
 
 # 启动开发服务器
 Write-Host "✨ 启动中..." -ForegroundColor Green
-npm run tauri dev
+pnpm run tauri dev
