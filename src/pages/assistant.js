@@ -5,7 +5,7 @@
  */
 import { renderMarkdown } from '../lib/markdown.js'
 import { toast } from '../components/toast.js'
-import { showConfirm } from '../components/modal.js'
+import { showModal, showConfirm } from '../components/modal.js'
 import { api } from '../lib/tauri-api.js'
 import { wsClient } from '../lib/ws-client.js'
 import { OPENCLAW_KB } from '../lib/openclaw-kb.js'
@@ -1385,14 +1385,23 @@ function getCurrentSession() {
   return _sessions.find(s => s.id === _currentSessionId) || null
 }
 
-function createSession() {
+function createSession(mode = 'assistant') {
   const session = {
     id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2),
     title: '新会话',
     messages: [],
+    mode: mode, // 标记会话模式
     createdAt: Date.now(),
     updatedAt: Date.now()
   }
+  
+  // 如果是 OpenClaw 模式，初始化 sessionKey
+  if (mode === 'openclaw') {
+    session.ocAgentId = 'main' // 默认智能体
+    session.ocChannel = 'chat-' + session.id.slice(0, 8)
+    session.ocSessionKey = `agent:main:${session.ocChannel}`
+  }
+
   _sessions.push(session)
   _currentSessionId = session.id
   saveSessions()
@@ -2255,19 +2264,36 @@ async function callAIWithTools(messages, onStatus, onToolProgress) {
 
 function renderSessionList() {
   if (!_sessionListEl) return
-  const sorted = [..._sessions].reverse()
-  _sessionListEl.innerHTML = sorted.map(s => {
+  const targetMode = currentMode() === 'openclaw' ? 'openclaw' : 'assistant'
+  // 过滤当前模式下的会话，并按时间倒序排列
+  const modeSessions = _sessions
+    .filter(s => (s.mode || 'assistant') === targetMode)
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+
+  if (modeSessions.length === 0) {
+    _sessionListEl.innerHTML = '<div class="ast-empty">暂无会话</div>'
+    return
+  }
+
+  _sessionListEl.innerHTML = modeSessions.map(s => {
+    const active = s.id === _currentSessionId ? 'active' : ''
+    const isOC = s.mode === 'openclaw'
+    const label = isOC ? (s.ocAgentId === 'main' ? s.title : `${s.ocAgentId} / ${s.title}`) : s.title
+    
     const status = getSessionStatus(s.id)
     const dotClass = status === 'streaming' ? 'ast-status-dot streaming'
       : status === 'waiting' ? 'ast-status-dot waiting'
       : status === 'error' ? 'ast-status-dot error'
       : ''
     const dot = dotClass ? `<span class="${dotClass}"></span>` : ''
-    return `<div class="ast-session-item ${s.id === _currentSessionId ? 'active' : ''}" data-id="${s.id}">
-      ${dot}<span class="ast-session-title">${escHtml(s.title)}</span>
-      <button class="ast-session-delete" data-delete="${s.id}" title="删除会话">×</button>
-    </div>`
-  }).join('') || '<div class="ast-empty">暂无会话</div>'
+
+    return `
+      <div class="ast-session-item ${active}" data-id="${s.id}">
+        ${dot}<span class="ast-session-title" title="${escHtml(label)}">${escHtml(label)}</span>
+        <button class="ast-session-delete" data-delete="${s.id}" title="删除会话">&times;</button>
+      </div>
+    `
+  }).join('')
 }
 
 function renderToolBlocks(toolHistory) {
@@ -3843,9 +3869,147 @@ let _ocSessionKey = null
 let _ocUnsubs = []
 let _ocMessages = [] // 平台模式下的独立消息缓存
 
+/** 弹出新建 OpenClaw 会话弹窗 */
+async function showNewOCSessionDialog() {
+  const defaultAgent = 'main'
+  let agentOptions = []
+  
+  try {
+    const agents = await api.listAgents()
+    agentOptions = agents.map(a => {
+      const name = a.identityName ? a.identityName.split(',')[0] : '未命名智能体'
+      return {
+        value: a.id,
+        label: `${name} (${a.id})${a.isDefault ? ' [默认]' : ''}`
+      }
+    })
+  } catch (e) { console.warn('获取 Agent 列表失败', e) }
+
+  // 增加“新建智能体”快捷选项
+  agentOptions.push({ value: '__new_agent__', label: '+ 新建智能体...' })
+
+  showModal({
+    title: '新建 OpenClaw 会话',
+    fields: [
+      { name: 'title', label: '会话名称', value: '', placeholder: '例如：翻译助手' },
+      { name: 'agentId', label: '选择智能体', type: 'select', value: defaultAgent, options: agentOptions },
+    ],
+    onConfirm: (result) => {
+      const agentId = result.agentId || 'main'
+      
+      // 如果选择了“新建智能体”，拦截并弹出新建智能体弹窗
+      if (agentId === '__new_agent__') {
+        showQuickAddAgentDialog()
+        return
+      }
+
+      const title = (result.title || '').trim() || '新会话'
+      const session = createSession('openclaw')
+      session.title = title
+      session.ocAgentId = agentId
+      session.ocSessionKey = `agent:${agentId}:${session.ocChannel}`
+      
+      saveSessions()
+      renderSessionList()
+      renderMessages()
+      connectGateway()
+    }
+  })
+}
+
+/** 快捷新建智能体弹窗（逻辑与 agents.js 保持一致） */
+async function showQuickAddAgentDialog() {
+  // 获取模型列表
+  let models = []
+  try {
+    const config = await api.readOpenclawConfig()
+    const providers = config?.models?.providers || {}
+    for (const [pk, pv] of Object.entries(providers)) {
+      for (const m of (pv.models || [])) {
+        const id = typeof m === 'string' ? m : m.id
+        if (id) models.push({ value: `${pk}/${id}`, label: `${pk}/${id}` })
+      }
+    }
+  } catch { models = [{ value: 'newapi/claude-opus-4-6', label: 'newapi/claude-opus-4-6' }] }
+
+  if (!models.length) {
+    toast('请先在模型配置页面添加模型', 'warning')
+    return
+  }
+
+  // 自动分配唯一 ID
+  const autoId = 'agent-' + Math.random().toString(36).slice(2, 10)
+
+  showModal({
+    title: '快捷新建智能体',
+    fields: [
+      { 
+        name: 'id', 
+        label: 'Agent ID', 
+        value: autoId, 
+        readonly: true, 
+        hint: 'ID 已自动分配，双击可解锁修改' 
+      },
+      { name: 'name', label: '名称', value: '', placeholder: '例如：代码专家' },
+      { name: 'emoji', label: 'Emoji', value: '', placeholder: '例如：💻' },
+      { name: 'model', label: '模型', type: 'select', value: models[0]?.value || '', options: models },
+    ],
+    onConfirm: async (result) => {
+      const id = (result.id || '').trim()
+      if (!id) { toast('请输入 Agent ID', 'warning'); return }
+      const name = (result.name || '').trim()
+      const emoji = (result.emoji || '').trim()
+      const model = result.model || models[0]?.value || ''
+
+      try {
+        await api.addAgent(id, model, null)
+        if (name || emoji) {
+          await api.updateAgentIdentity(id, name || null, emoji || null)
+        }
+        toast('智能体已创建', 'success')
+        // 创建成功后，直接用这个新 Agent 开启会话，减少用户操作
+        const session = createSession('openclaw')
+        session.title = name || '新会话'
+        session.ocAgentId = id
+        session.ocSessionKey = `agent:${id}:${session.ocChannel}`
+        
+        saveSessions()
+        renderSessionList()
+        renderMessages()
+        connectGateway()
+        // 同时更新快捷栏
+        const quickBarEl = _page?.querySelector('#ast-quick-bar')
+        if (quickBarEl) renderQuickBar(quickBarEl)
+      } catch (e) {
+        toast('创建失败: ' + e, 'error')
+      }
+    }
+  })
+
+  // 延时一帧，为 ID 输入框绑定双击解锁逻辑
+  setTimeout(() => {
+    const idInput = document.querySelector('.modal-overlay input[data-name="id"]')
+    if (idInput) {
+      idInput.addEventListener('dblclick', () => {
+        if (idInput.readOnly) {
+          toast('请谨慎修改 ID', 'warning')
+          idInput.readOnly = false
+          idInput.style.opacity = '1'
+          idInput.style.cursor = 'text'
+          idInput.focus()
+        }
+      })
+    }
+  }, 50)
+}
+
 /** 连接 OpenClaw Gateway（平台模式） */
 async function connectGateway() {
   if (currentMode() !== 'openclaw') return
+
+  const session = getCurrentSession()
+  if (!session || session.mode !== 'openclaw') return
+  const sessionKey = session.ocSessionKey
 
   // 清理旧订阅
   _ocUnsubs.forEach(unsub => unsub())
@@ -3863,28 +4027,27 @@ async function connectGateway() {
   _ocUnsubs.push(unsubStatus)
 
   // 就绪监听
-  const unsubReady = wsClient.onReady((hello, sessionKey, err) => {
+  const unsubReady = wsClient.onReady((hello, sk, err) => {
     if (currentMode() !== 'openclaw') return
     if (err) {
       toast('连接网关失败: ' + (err.message || '未知错误'), 'error')
       return
     }
-    _ocSessionKey = sessionKey
-    loadOpenClawHistory()
+    // 注意：sk 是网关返回的默认 key，我们使用会话绑定的 key
+    loadOpenClawHistory(sessionKey)
   })
   _ocUnsubs.push(unsubReady)
 
   // 事件监听
   const unsubEvent = wsClient.onEvent((msg) => {
     if (currentMode() !== 'openclaw') return
-    handleOpenClawEvent(msg)
+    handleOpenClawEvent(msg, sessionKey)
   })
   _ocUnsubs.push(unsubEvent)
 
   // 如果已经连接，直接加载
   if (wsClient.connected && wsClient.gatewayReady) {
-    _ocSessionKey = wsClient.sessionKey
-    loadOpenClawHistory()
+    loadOpenClawHistory(sessionKey)
   } else {
     // 自动连接
     try {
@@ -3900,10 +4063,10 @@ async function connectGateway() {
 }
 
 /** 加载 OpenClaw 历史消息 */
-async function loadOpenClawHistory() {
-  if (!_ocSessionKey || !wsClient.gatewayReady) return
+async function loadOpenClawHistory(sessionKey) {
+  if (!sessionKey || !wsClient.gatewayReady) return
   try {
-    const result = await wsClient.chatHistory(_ocSessionKey, 50)
+    const result = await wsClient.chatHistory(sessionKey, 50)
     if (result?.messages) {
       _ocMessages = result.messages.map(m => {
         const c = extractOpenClawContent(m)
@@ -3922,10 +4085,10 @@ async function loadOpenClawHistory() {
 }
 
 /** 处理 OpenClaw 实时事件 */
-function handleOpenClawEvent(msg) {
+function handleOpenClawEvent(msg, sessionKey) {
   const { event, payload } = msg
   if (event !== 'chat' || !payload) return
-  if (payload.sessionKey && payload.sessionKey !== _ocSessionKey) return
+  if (payload.sessionKey && payload.sessionKey !== sessionKey) return
 
   const { state } = payload
   if (state === 'delta') {
@@ -4050,6 +4213,7 @@ export async function render() {
       <div class="ast-messages" id="ast-messages"></div>
       <div class="ast-queue" id="ast-queue"></div>
       <div class="ast-input-area">
+        <div class="ast-quick-bar" id="ast-quick-bar" style="display:none"></div>
         <div class="ast-image-preview" id="ast-image-preview"></div>
         <div class="ast-input-wrap">
           <button class="ast-attach-btn" id="ast-btn-attach" title="上传图片">
@@ -4070,11 +4234,13 @@ export async function render() {
   _textarea = page.querySelector('#ast-textarea')
   _sendBtn = page.querySelector('#ast-send-btn')
   _sessionListEl = page.querySelector('#ast-session-list')
+  const quickBarEl = page.querySelector('#ast-quick-bar')
 
   // 渲染
   renderSessionList()
   renderMessages()
   renderQueue()
+  renderQuickBar(quickBarEl)
   applyModeStyle(page, currentMode())
   // 滑块需要等 DOM 绘制完毕才能获取正确位置
   requestAnimationFrame(() => positionModeSlider(page, currentMode()))
@@ -4255,9 +4421,15 @@ export async function render() {
 
   // 新建会话
   page.querySelector('#ast-btn-new').addEventListener('click', () => {
-    createSession()
-    renderSessionList()
-    renderMessages()
+    const mode = currentMode() === 'openclaw' ? 'openclaw' : 'assistant'
+    
+    if (mode === 'openclaw') {
+      showNewOCSessionDialog()
+    } else {
+      createSession(mode)
+      renderSessionList()
+      renderMessages()
+    }
   })
 
   // 模式切换
@@ -4276,13 +4448,25 @@ export async function render() {
     applyModeStyle(page, modeKey)
     playModeTransition(page, modeKey)
 
+    // 模式切换后，自动选择该模式下的最新会话，或者创建新会话
+    const targetMode = modeKey === 'openclaw' ? 'openclaw' : 'assistant'
+    const modeSessions = _sessions.filter(s => (s.mode || 'assistant') === targetMode)
+    if (modeSessions.length > 0) {
+      _currentSessionId = modeSessions[modeSessions.length - 1].id
+    } else {
+      createSession(targetMode)
+    }
+
+    renderSessionList()
+    renderMessages()
+
     // 如果切入平台模式，确保连接并显示状态
     if (modeKey === 'openclaw') {
       connectGateway()
-    } else if (oldMode === 'openclaw') {
-      // 从平台模式切回助手模式，恢复助手会话
-      renderMessages()
     }
+    
+    // 更新快捷栏显示状态
+    renderQuickBar(page.querySelector('#ast-quick-bar'))
   })
 
   // 设置
@@ -4307,6 +4491,8 @@ export async function render() {
       _currentSessionId = item.dataset.id
       renderSessionList()
       renderMessages()
+      // 切换会话后更新快捷栏（显示当前 Agent）
+      renderQuickBar(page.querySelector('#ast-quick-bar'))
       // 切换到正在流式的会话时，启动刷新
       if (_isStreaming && getSessionStatus(_currentSessionId) === 'streaming') {
         startStreamRefresh()
@@ -4395,6 +4581,72 @@ function renderWelcomeHtml() {
     </div>
   `
   if (_errorContext) renderErrorBanner()
+}
+
+/** 渲染快捷 Agent 启动栏 */
+async function renderQuickBar(el) {
+  if (!el) return
+  if (currentMode() !== 'openclaw') {
+    el.style.display = 'none'
+    return
+  }
+
+  el.style.display = 'flex'
+  el.className = 'ast-quick-bar'
+  
+  const currentSession = getCurrentSession()
+  const currentAgentId = (currentSession?.mode === 'openclaw') ? currentSession.ocAgentId : 'main'
+
+  let agents = []
+  try {
+    agents = await api.listAgents()
+  } catch (e) { console.warn('快捷栏加载 Agent 失败', e) }
+
+  // 确保至少有 main
+  if (agents.length === 0) agents.push({ id: 'main', identityName: '默认智能体' })
+
+  let html = `
+    <div class="ast-quick-status">
+      <span>智能体:</span>
+      <div class="ast-agent-select-wrap">
+        <select class="ast-agent-select" id="ast-agent-quick-select">
+          ${agents.map(a => {
+            const name = a.identityName ? a.identityName.split(',')[0] : '智能体'
+            const displayName = `${name} (${a.id})`
+            return `<option value="${a.id}" ${a.id === currentAgentId ? 'selected' : ''}>${displayName}</option>`
+          }).join('')}
+        </select>
+        <div class="ast-agent-select-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="ast-quick-actions">
+      <button class="ast-quick-new-btn" id="ast-quick-btn-new" title="新建会话">${icon('plus', 12)} 新建会话</button>
+    </div>
+  `
+  el.innerHTML = html
+
+  // 绑定下拉选择事件
+  const select = el.querySelector('#ast-agent-quick-select')
+  select.onchange = () => {
+    const agentId = select.value
+    if (agentId === currentAgentId) return
+    
+    const session = createSession('openclaw')
+    session.title = '新会话'
+    session.ocAgentId = agentId
+    session.ocSessionKey = `agent:${agentId}:${session.ocChannel}`
+    saveSessions()
+    renderSessionList()
+    renderMessages()
+    renderQuickBar(el)
+    connectGateway()
+    toast(`已切换至智能体: ${agentId}`, 'success')
+  }
+
+  const newBtn = el.querySelector('#ast-quick-btn-new')
+  if (newBtn) newBtn.onclick = () => showNewOCSessionDialog()
 }
 
 export function cleanup() {

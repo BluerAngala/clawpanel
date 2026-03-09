@@ -371,6 +371,100 @@
   text-align: center;
 }
 
+/* ── 快捷 Agent 启动栏 ── */
+.ast-quick-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 4px 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-primary);
+  gap: 12px;
+}
+
+.ast-quick-status {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.ast-agent-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ast-agent-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  padding: 2px 24px 2px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+  max-width: 180px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  color-scheme: light dark;
+}
+
+.ast-agent-select:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
+}
+
+.ast-agent-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.ast-agent-select-icon {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  color: var(--text-tertiary);
+  display: flex;
+}
+
+.ast-quick-actions {
+  display: flex;
+  align-items: center;
+}
+
+.ast-quick-new-btn {
+  padding: 4px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ast-quick-new-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ast-quick-new-btn svg {
+  flex-shrink: 0;
+}
+
 /* ── 欢迎页 ── */
 .ast-welcome {
   display: flex;

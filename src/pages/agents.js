@@ -141,10 +141,19 @@ async function showAddAgentDialog(page, state) {
     return
   }
 
+  // 自动分配唯一 ID
+  const autoId = 'agent-' + Math.random().toString(36).slice(2, 10)
+
   showModal({
     title: '新建 Agent',
     fields: [
-      { name: 'id', label: 'Agent ID', value: '', placeholder: '例如：translator（小写字母、数字、下划线、连字符）' },
+      { 
+        name: 'id', 
+        label: 'Agent ID', 
+        value: autoId, 
+        readonly: true, 
+        hint: 'ID 已自动分配，双击可解锁修改（不建议修改）' 
+      },
       { name: 'name', label: '名称', value: '', placeholder: '例如：翻译助手' },
       { name: 'emoji', label: 'Emoji', value: '', placeholder: '例如：🌐（可选）' },
       { name: 'model', label: '模型', type: 'select', value: models[0]?.value || '', options: models },
@@ -175,6 +184,22 @@ async function showAddAgentDialog(page, state) {
       }
     }
   })
+
+  // 延时一帧，为 ID 输入框绑定双击解锁逻辑
+  setTimeout(() => {
+    const idInput = document.querySelector('.modal-overlay input[data-name="id"]')
+    if (idInput) {
+      idInput.addEventListener('dblclick', () => {
+        if (idInput.readOnly) {
+          toast('警告：修改 Agent ID 可能导致旧的关联数据失效，请谨慎操作', 'warning')
+          idInput.readOnly = false
+          idInput.style.opacity = '1'
+          idInput.style.cursor = 'text'
+          idInput.focus()
+        }
+      })
+    }
+  }, 50)
 }
 
 async function showEditAgentDialog(page, state, id) {
