@@ -84,7 +84,6 @@ export async function render() {
       <button class="btn btn-primary btn-sm" id="btn-add-provider">+ 添加服务商</button>
       <button class="btn btn-secondary btn-sm" id="btn-show-promo">${icon('gift', 14)} 公益计划</button>
       <button class="btn btn-secondary btn-sm" id="btn-add-siliconflow">${icon('zap', 14)} 硅基流动 (推荐)</button>
-      <button class="btn btn-secondary btn-sm" id="btn-undo" disabled>↩ 撤销</button>
     </div>
     <div class="form-hint" style="margin-bottom:var(--space-md)">
       服务商是模型的来源（如 OpenAI、DeepSeek 等）。每个服务商下可添加多个模型。
@@ -623,11 +622,7 @@ async function doAutoSave(state) {
 
 // 更新撤销按钮状态
 function updateUndoBtn(page, state) {
-  const btn = page.querySelector('#btn-undo')
-  if (!btn) return
-  const n = state.undoStack.length
-  btn.disabled = !n
-  btn.textContent = n ? `↩ 撤销 (${n})` : '↩ 撤销'
+  // 撤销按钮已去除
 }
 
 // 渲染完成后，直接给每个 [data-action] 按钮绑定 onclick
@@ -912,7 +907,6 @@ function applyDefaultModel(state) {
 // 顶部按钮事件
 function bindTopActions(page, state) {
   page.querySelector('#btn-add-provider').onclick = () => addProvider(page, state)
-  page.querySelector('#btn-undo').onclick = () => undo(page, state)
 
   // 公益计划方案切换
   page.querySelector('#btn-show-promo').onclick = () => {
