@@ -166,6 +166,16 @@
 .sidebar-footer {
   padding: var(--space-sm);
   border-top: 1px solid var(--border-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.footer-divider {
+  height: 1px;
+  background: var(--border-secondary);
+  margin: var(--space-xs) var(--space-sm);
+  opacity: 0.5;
 }
 
 .sidebar-meta {
@@ -190,6 +200,11 @@
 
 .nav-section {
   margin-bottom: var(--space-md);
+  transition: margin-bottom var(--transition-normal);
+}
+
+.nav-section.collapsed {
+  margin-bottom: var(--space-xs);
 }
 
 .nav-section-title {
@@ -199,6 +214,49 @@
   letter-spacing: 0.5px;
   padding: var(--space-sm) var(--space-sm);
   margin-bottom: var(--space-xs);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: color var(--transition-fast);
+  user-select: none;
+}
+
+.nav-section-title[data-section] {
+  cursor: pointer;
+}
+
+.nav-section-title[data-section]:hover {
+  color: var(--text-primary);
+}
+
+.nav-section-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-normal);
+  opacity: 0.4;
+}
+
+.nav-section-chevron svg {
+  width: 12px;
+  height: 12px;
+}
+
+.nav-section.collapsed .nav-section-chevron {
+  transform: rotate(-90deg);
+}
+
+.nav-section-content {
+  overflow: hidden;
+  max-height: 500px;
+  transition: max-height var(--transition-normal) ease, opacity var(--transition-normal) ease;
+  opacity: 1;
+}
+
+.nav-section.collapsed .nav-section-content {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .nav-item {

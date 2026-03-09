@@ -44,13 +44,6 @@ const NAV_ITEMS_FULL = [
     items: [
       { route: '/docker', label: '龙虾军团', icon: 'docker' },
     ]
-  },
-  {
-    section: '',
-    items: [
-      { route: '/chat-debug', label: '系统诊断', icon: 'debug' },
-      { route: '/about', label: '关于', icon: 'about' },
-    ]
   }
 ]
 
@@ -66,13 +59,6 @@ const NAV_ITEMS_SETUP = [
     section: '',
     items: [
       { route: '/extensions', label: '扩展工具', icon: 'extensions' },
-    ]
-  },
-  {
-    section: '',
-    items: [
-      { route: '/chat-debug', label: '系统诊断', icon: 'debug' },
-      { route: '/about', label: '关于', icon: 'about' },
     ]
   }
 ]
@@ -94,10 +80,12 @@ const ICONS = {
   skills: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
   docker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="11" width="4" height="3" rx=".5"/><rect x="6" y="11" width="4" height="3" rx=".5"/><rect x="11" y="11" width="4" height="3" rx=".5"/><rect x="6" y="7" width="4" height="3" rx=".5"/><rect x="11" y="7" width="4" height="3" rx=".5"/><rect x="16" y="11" width="4" height="3" rx=".5"/><rect x="11" y="3" width="4" height="3" rx=".5"/><path d="M2 17c1 3 4 5 10 5s9-2 10-5"/></svg>',
   debug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>',
+  chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>',
 }
 
 let _delegated = false
 let _hasMultipleInstances = false
+let _collapsedSections = null
 
 // 异步检测是否有多实例（首次渲染后触发，有多实例时重渲染）
 function _checkMultiInstances(el) {
@@ -138,9 +126,33 @@ export function renderSidebar(el) {
 
   const navItems = isOpenclawReady() ? NAV_ITEMS_FULL : NAV_ITEMS_SETUP
 
+  // 初始化折叠状态：默认折叠除“概览”和空分组外的所有分组
+  if (_collapsedSections === null) {
+    _collapsedSections = new Set()
+    for (const section of navItems) {
+      if (section.section && section.section !== '概览') {
+        _collapsedSections.add(section.section)
+      }
+    }
+  } else if (isOpenclawReady() && _collapsedSections.size === 0) {
+    // 如果从 SETUP 模式切换到 FULL 模式，且之前是空的，重新初始化一次
+    for (const section of NAV_ITEMS_FULL) {
+      if (section.section && section.section !== '概览') {
+        _collapsedSections.add(section.section)
+      }
+    }
+  }
+
   for (const section of navItems) {
-    html += `<div class="nav-section">
-      <div class="nav-section-title">${section.section}</div>`
+    const isCollapsed = section.section && _collapsedSections.has(section.section)
+    const canCollapse = !!section.section && section.section !== '概览'
+    
+    html += `<div class="nav-section${isCollapsed ? ' collapsed' : ''}">
+      <div class="nav-section-title"${canCollapse ? ` data-section="${_escSidebar(section.section)}"` : ''}>
+        <span>${section.section}</span>
+        ${canCollapse ? `<span class="nav-section-chevron">${ICONS.chevron}</span>` : ''}
+      </div>
+      <div class="nav-section-content">`
 
     for (const item of section.items) {
       const active = current === item.route ? ' active' : ''
@@ -149,7 +161,7 @@ export function renderSidebar(el) {
         <span>${item.label}</span>
       </div>`
     }
-    html += '</div>'
+    html += '</div></div>'
   }
 
   html += '</nav>'
@@ -159,12 +171,27 @@ export function renderSidebar(el) {
   const sunIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
   const moonIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>'
 
+  const footerNavItems = [
+    { route: '/chat-debug', label: '系统诊断', icon: 'debug' },
+    { route: '/about', label: '关于', icon: 'about' },
+  ]
+
   html += `
     <div class="sidebar-footer">
       <div class="nav-item" id="btn-theme-toggle">
         ${isDark ? sunIcon : moonIcon}
         <span>${isDark ? '日间模式' : '夜间模式'}</span>
       </div>
+      <div class="footer-divider"></div>
+      ${footerNavItems.map(item => {
+        const active = current === item.route ? ' active' : ''
+        return `
+          <div class="nav-item${active}" data-route="${item.route}">
+            ${ICONS[item.icon] || ''}
+            <span>${item.label}</span>
+          </div>
+        `
+      }).join('')}
       <div class="sidebar-meta">
         <a href="https://claw.qt.cool" target="_blank" rel="noopener" class="sidebar-link">claw.qt.cool</a>
         <span class="sidebar-version">v${APP_VERSION}</span>
@@ -186,6 +213,18 @@ export function renderSidebar(el) {
       if (navItem) {
         navigate(navItem.dataset.route)
         _closeMobileSidebar()
+        return
+      }
+      // 分组折叠
+      const sectionTitle = e.target.closest('.nav-section-title[data-section]')
+      if (sectionTitle) {
+        const section = sectionTitle.dataset.section
+        if (_collapsedSections.has(section)) {
+          _collapsedSections.delete(section)
+        } else {
+          _collapsedSections.add(section)
+        }
+        renderSidebar(el)
         return
       }
       // 移动端关闭按钮
