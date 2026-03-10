@@ -248,7 +248,8 @@ function renderDebugInfo(el, info) {
     html += `<li style="color:var(--warning);margin-bottom:6px">${statusIcon('warn')} WebSocket 已连接但握手未完成，请检查 token 是否正确</li>`
   }
   if (allOk) {
-    html += `<li style="color:var(--success);margin-bottom:6px">${statusIcon('ok')} 所有检测项正常，系统运行良好</li>`
+    html += `<li style="color:var(--success);margin-bottom:6px">${statusIcon('ok')} 所有核心功能运行正常</li>`
+    html += `<li style="color:var(--text-tertiary);margin-bottom:6px;font-size:12px">注意：诊断仅针对本地基础设施。如果 AI 助手提示模型不可用，请检查"模型配置"中的 API Key 或尝试切换其他模型。</li>`
   }
 
   html += `</ul></div>`
