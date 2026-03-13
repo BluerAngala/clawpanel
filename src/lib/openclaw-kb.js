@@ -234,7 +234,6 @@ ClawPanel 项目组正式开放公益 AI 接口测试计划，降低用户接入
 - **ClawPanel 官网**：https://claw.qt.cool/
 - **GPT-AI 网关官网**：https://gpt.qt.cool/
 - **用户后台**：https://gpt.qt.cool/user
-- **晴辰导航站**：https://qt.cool/
 
 ### 测试密钥
 - ClawPanel 已内置公共体验密钥，开箱即用
