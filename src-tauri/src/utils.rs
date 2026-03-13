@@ -32,8 +32,6 @@ pub fn openclaw_command_async() -> tokio::process::Command {
         let mut cmd = tokio::process::Command::new("cmd");
         cmd.arg("/c").arg("openclaw");
         cmd.env("PATH", crate::commands::enhanced_path());
-        cmd.stdout(std::process::Stdio::null());
-        cmd.stderr(std::process::Stdio::null());
         cmd.creation_flags(CREATE_NO_WINDOW);
         cmd
     }

@@ -12,7 +12,9 @@ pub async fn skills_list() -> Result<Value, String> {
     match output {
         Ok(o) if o.status.success() => {
             let stdout = String::from_utf8_lossy(&o.stdout);
-            serde_json::from_str(&stdout).map_err(|e| format!("解析失败: {e}"))
+            // 提取 JSON 部分（处理输出中可能包含的额外内容）
+            let json_str = extract_json(&stdout);
+            serde_json::from_str(json_str).map_err(|e| format!("解析失败: {e}"))
         }
         _ => {
             // CLI 不可用时，兜底扫描本地 skills 目录
@@ -36,7 +38,8 @@ pub async fn skills_info(name: String) -> Result<Value, String> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    serde_json::from_str(&stdout).map_err(|e| format!("解析详情失败: {e}"))
+    let json_str = extract_json(&stdout);
+    serde_json::from_str(json_str).map_err(|e| format!("解析详情失败: {e}"))
 }
 
 /// 检查 Skills 依赖状态（openclaw skills check --json）
@@ -54,7 +57,8 @@ pub async fn skills_check() -> Result<Value, String> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    serde_json::from_str(&stdout).map_err(|e| format!("解析失败: {e}"))
+    let json_str = extract_json(&stdout);
+    serde_json::from_str(json_str).map_err(|e| format!("解析失败: {e}"))
 }
 
 /// 安装 Skill 依赖（根据 install spec 执行 brew/npm/go/uv/download）
@@ -273,4 +277,26 @@ fn parse_skill_description(path: &std::path::Path) -> String {
         }
     }
     String::new()
+}
+
+/// 从输出中提取 JSON 部分（处理可能包含的额外日志或文本）
+fn extract_json(output: &str) -> &str {
+    let trimmed = output.trim();
+
+    // 查找第一个 '[' 或 '{'
+    let start_idx = trimmed
+        .find(['[', '{'])
+        .unwrap_or(0);
+
+    // 查找最后一个 ']' 或 '}'
+    let end_idx = trimmed
+        .rfind([']', '}'])
+        .map(|i| i + 1)
+        .unwrap_or(trimmed.len());
+
+    if start_idx < end_idx {
+        &trimmed[start_idx..end_idx]
+    } else {
+        trimmed
+    }
 }
