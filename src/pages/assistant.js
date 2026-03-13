@@ -4182,7 +4182,7 @@ export async function render() {
       <div class="ast-input-area">
         <div class="ast-quick-bar" id="ast-quick-bar" style="display:none"></div>
         <div class="ast-image-preview" id="ast-image-preview"></div>
-        <div class="ast-input-toolbar">
+        <div class="ast-input-toolbar" id="ast-input-toolbar" style="display:${currentMode() === 'openclaw' ? 'none' : 'flex'}">
           <button class="ast-toolbar-btn" id="ast-btn-input-new" title="创建新会话">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             新建会话
@@ -4454,6 +4454,12 @@ export async function render() {
     
     // 更新快捷栏显示状态
     renderQuickBar(page.querySelector('#ast-quick-bar'))
+    
+    // 更新输入框工具栏显示状态（OpenClaw模式下隐藏，避免重复）
+    const inputToolbar = page.querySelector('#ast-input-toolbar')
+    if (inputToolbar) {
+      inputToolbar.style.display = modeKey === 'openclaw' ? 'none' : 'flex'
+    }
   })
 
   // 设置
