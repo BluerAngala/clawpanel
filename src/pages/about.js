@@ -17,7 +17,7 @@ export async function render() {
       <img src="/images/logo-brand.png" alt="ClawPanel" style="height:48px;width:auto">
       <div>
         <h1 class="page-title" style="margin:0">ClawPanel</h1>
-        <p class="page-desc" style="margin:0">OpenClaw 可视化管理面板 · <a href="https://claw.qt.cool" target="_blank" rel="noopener" style="color:var(--primary)">claw.qt.cool</a></p>
+        <p class="page-desc" style="margin:0">OpenClaw 可视化管理面板 · <a href="https://claw.qt.cool" target="_blank" rel="noopener" style="color:var(--primary)">本项目基于开源项目二次开发</a></p>
       </div>
     </div>
     <div class="stat-cards" id="version-cards">
@@ -42,7 +42,7 @@ export async function render() {
       <div id="links-list"></div>
     </div>
     <div class="config-section" style="color:var(--text-tertiary);font-size:var(--font-size-xs)">
-      <p>ClawPanel 基于 Tauri v2 构建，前端 Vanilla JS + Vite，后端 Rust。</p>
+      <p>ClawPanel 基于 Tauri v2 构建，前端 Vanilla JS + Vite，后端 Rust。陈恒律师基于开源项目二次开发。</p>
       <p style="margin-top:8px">MIT License &copy; 2026 qingchencloud</p>
     </div>
   `
@@ -402,7 +402,7 @@ async function checkHotUpdate(cards, panelVersion) {
         }
       })
     } else if (!info.compatible) {
-      meta.innerHTML = '<span style="color:var(--text-tertiary)">需要更新完整安装包</span> <a class="btn btn-secondary btn-sm" href="https://github.com/qingchencloud/clawpanel/releases" target="_blank" rel="noopener" style="padding:2px 8px;font-size:var(--font-size-xs)">下载</a>'
+      meta.innerHTML = '<span style="color:var(--text-tertiary)">如需更新，请联系陈恒律师。</span>'
     } else {
       meta.innerHTML = '<span style="color:var(--success)">已是最新</span>'
     }
@@ -433,30 +433,18 @@ function compareVersions(a, b) {
 function renderCommunity(page) {
   const el = page.querySelector('#community-section')
   el.innerHTML = `
-    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;justify-content:center">
       <div style="text-align:center">
-        <img src="/images/OpenClaw-QQ.png" alt="QQ 交流群" style="width:140px;height:140px;border-radius:var(--radius-md);border:1px solid var(--border-primary)">
+        <img src="/images/QQ-AI群.png" alt="QQ 交流群" style="width:140px;height:140px;border-radius:var(--radius-md);border:1px solid var(--border-primary)">
         <div style="font-size:var(--font-size-sm);margin-top:8px;color:var(--text-secondary)">QQ 交流群</div>
       </div>
       <div style="text-align:center">
-        <img src="/images/OpenClawWx.png" alt="微信交流群" style="width:140px;height:140px;border-radius:var(--radius-md);border:1px solid var(--border-primary)">
-        <div style="font-size:var(--font-size-sm);margin-top:8px;color:var(--text-secondary)">微信交流群</div>
+        <img src="/images/飞书-AI群.png" alt="飞书 交流群" style="width:140px;height:140px;border-radius:var(--radius-md);border:1px solid var(--border-primary)">
+        <div style="font-size:var(--font-size-sm);margin-top:8px;color:var(--text-secondary)">飞书 交流群</div>
       </div>
       <div style="text-align:center">
-        <img src="https://qt.cool/c/OpenClawDY/qr.png" alt="抖音交流群" style="width:140px;height:140px;border-radius:var(--radius-md);border:1px solid var(--border-primary);object-fit:contain;background:#fff">
-        <div style="font-size:var(--font-size-sm);margin-top:8px;color:var(--text-secondary)">抖音交流群</div>
-      </div>
-      <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px;padding-top:4px">
-        <div style="font-size:var(--font-size-sm);color:var(--text-secondary)">扫码或点击链接加入交流群，反馈问题、获取帮助</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
-          <a class="btn btn-primary btn-sm" href="https://qt.cool/c/OpenClaw" target="_blank" rel="noopener">加入 QQ 群</a>
-          <a class="btn btn-primary btn-sm" href="https://qt.cool/c/OpenClawWx" target="_blank" rel="noopener">加入微信群</a>
-          <a class="btn btn-primary btn-sm" href="https://qt.cool/c/OpenClawDY" target="_blank" rel="noopener">加入抖音群</a>
-          <a class="btn btn-secondary btn-sm" href="https://yb.tencent.com/gp/i/LsvIw7mdR7Lb" target="_blank" rel="noopener">元宝派社群</a>
-        </div>
-        <div style="font-size:var(--font-size-xs);color:var(--text-tertiary);margin-top:8px">
-          2000 人大群，满员自动切换 · 碰到问题可直接在群内反馈
-        </div>
+        <img src="/images/名片头像.jpg" alt="个人名片" style="width:140px;height:140px;border-radius:var(--radius-md);border:1px solid var(--border-primary)">
+        <div style="font-size:var(--font-size-sm);margin-top:8px;color:var(--text-secondary)">个人名片</div>
       </div>
     </div>
   `

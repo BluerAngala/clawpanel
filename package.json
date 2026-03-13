@@ -1,8 +1,8 @@
 {
   "name": "clawpanel",
-  "version": "0.7.0",
+  "version": "0.7.0-beta.1",
   "private": true,
-  "description": "ClawPanel - OpenClaw 可视化管理面板，基于 Tauri v2 的跨平台桌面应用",
+  "description": "ClawPanel - OpenClaw 可视化管理面板，基于 Tauri v2 的跨平台桌面应用。陈恒律师基于开源项目二次开发。",
   "type": "module",
   "author": "qingchencloud",
   "license": "MIT",
