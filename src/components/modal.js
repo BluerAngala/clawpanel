@@ -15,20 +15,38 @@ function escapeAttr(str) {
 /**
  * 自定义确认弹窗，替代原生 confirm()
  * Tauri WebView 不支持原生 confirm/alert，必须用自定义弹窗
- * @param {string} message 确认消息
+ * @param {string|object} options 确认消息或配置对象
+ * @param {string} options.title 标题
+ * @param {string} options.message 确认消息
+ * @param {string} options.confirmText 确认按钮文字
+ * @param {string} options.cancelText 取消按钮文字
+ * @param {boolean} options.danger 是否为危险操作（红色按钮）
+ * @param {Function} options.onConfirm 确认回调（使用对象参数时）
  * @returns {Promise<boolean>} 用户选择确认返回 true，取消返回 false
  */
-export function showConfirm(message) {
+export function showConfirm(options) {
+  // 兼容字符串参数
+  const config = typeof options === 'string' ? { message: options } : options
+  const {
+    title = '确认操作',
+    message = '',
+    confirmText = '确定',
+    cancelText = '取消',
+    danger = false,
+    onConfirm
+  } = config
+
   return new Promise((resolve) => {
     const overlay = document.createElement('div')
     overlay.className = 'modal-overlay'
+    const confirmBtnClass = danger ? 'btn btn-danger btn-sm' : 'btn btn-primary btn-sm'
     overlay.innerHTML = `
       <div class="modal" style="max-width:400px">
-        <div class="modal-title">确认操作</div>
-        <div style="font-size:var(--font-size-sm);color:var(--text-secondary);white-space:pre-wrap;line-height:1.6">${escapeAttr(message)}</div>
+        <div class="modal-title">${escapeAttr(title)}</div>
+        <div style="font-size:var(--font-size-sm);color:var(--text-secondary);white-space:pre-wrap;line-height:1.6;margin-bottom:var(--space-md)">${escapeAttr(message)}</div>
         <div class="modal-actions">
-          <button class="btn btn-secondary btn-sm" data-action="cancel">取消</button>
-          <button class="btn btn-danger btn-sm" data-action="confirm">确定</button>
+          <button class="btn btn-secondary btn-sm" data-action="cancel">${escapeAttr(cancelText)}</button>
+          <button class="${confirmBtnClass}" data-action="confirm">${escapeAttr(confirmText)}</button>
         </div>
       </div>
     `
@@ -36,6 +54,9 @@ export function showConfirm(message) {
 
     const close = (result) => {
       overlay.remove()
+      if (onConfirm && result) {
+        onConfirm()
+      }
       resolve(result)
     }
 

@@ -2496,6 +2496,77 @@ function renderMessages() {
   requestAnimationFrame(() => {
     _messagesEl.scrollTop = _messagesEl.scrollHeight
   })
+
+  // 绑定消息操作按钮事件
+  bindMessageActions()
+}
+
+/** 绑定消息操作按钮事件 */
+function bindMessageActions() {
+  _messagesEl.querySelectorAll('.ast-msg-action-btn').forEach(btn => {
+    btn.addEventListener('click', handleMessageAction)
+  })
+}
+
+/** 处理消息操作 */
+function handleMessageAction(e) {
+  const btn = e.currentTarget
+  const action = btn.dataset.action
+  const idx = parseInt(btn.dataset.idx)
+
+  if (action === 'delete') {
+    deleteMessage(idx)
+  } else if (action === 'edit') {
+    editMessage(idx)
+  }
+}
+
+/** 删除/撤回消息 */
+function deleteMessage(idx) {
+  const session = getCurrentSession()
+  if (!session || idx >= session.messages.length) return
+
+  // 找到用户消息对应的 AI 回复（如果存在）
+  const msg = session.messages[idx]
+  if (msg.role !== 'user') return
+
+  showConfirm({
+    title: '撤回消息',
+    message: '确定要撤回这条消息吗？相关的 AI 回复也会被删除。',
+    confirmText: '撤回',
+    cancelText: '取消',
+    danger: true,
+    onConfirm: () => {
+      // 删除用户消息和对应的 AI 回复
+      session.messages.splice(idx, 2)
+      saveSessions()
+      renderMessages()
+      toast('消息已撤回', 'success')
+    }
+  })
+}
+
+/** 重新编辑消息 */
+function editMessage(idx) {
+  const session = getCurrentSession()
+  if (!session || idx >= session.messages.length) return
+
+  const msg = session.messages[idx]
+  if (msg.role !== 'user') return
+
+  const textPart = msg._text || (typeof msg.content === 'string' ? msg.content : (msg.content?.find?.(p => p.type === 'text')?.text || ''))
+
+  // 将消息内容填充到输入框
+  const inputEl = document.getElementById('ast-input')
+  if (inputEl) {
+    inputEl.value = textPart
+    inputEl.focus()
+
+    // 删除当前消息和后续消息
+    session.messages.splice(idx)
+    saveSessions()
+    renderMessages()
+  }
 }
 
 function buildTestResult({ success, elapsed, usedApi, reqUrl, reqBody, respStatus, respBody, reply, error }) {
@@ -4096,6 +4167,10 @@ export async function render() {
             <div class="ast-mode-slider" id="ast-mode-slider"></div>
             ${Object.entries(MODES).map(([key, m]) => `<button class="ast-mode-btn ${currentMode() === key ? 'active' : ''}" data-mode="${key}" title="${m.desc}">${MODE_ICONS[key]} ${m.label}</button>`).join('')}
           </div>
+          <button class="btn btn-sm btn-ghost" id="ast-btn-clear" title="清空当前会话">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            清空
+          </button>
           <button class="btn btn-sm btn-ghost" id="ast-btn-settings" title="模型设置">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
             设置
@@ -4364,6 +4439,28 @@ export async function render() {
   // 设置
   page.querySelector('#ast-btn-settings').addEventListener('click', showSettings)
 
+  // 清空当前会话
+  page.querySelector('#ast-btn-clear').addEventListener('click', () => {
+    const session = getCurrentSession()
+    if (!session || session.messages.length === 0) {
+      toast('当前会话没有消息', 'info')
+      return
+    }
+    showConfirm({
+      title: '清空会话',
+      message: '确定要清空当前会话的所有消息吗？此操作不可恢复。',
+      confirmText: '清空',
+      cancelText: '取消',
+      danger: true,
+      onConfirm: () => {
+        session.messages = []
+        saveSessions()
+        renderMessages()
+        toast('会话已清空', 'success')
+      }
+    })
+  })
+
   // 会话列表事件委托
   _sessionListEl.addEventListener('click', (e) => {
     const deleteBtn = e.target.closest('[data-delete]')
@@ -4437,7 +4534,17 @@ function renderMessageHtml(m, idx) {
         ? `<img class="ast-msg-img" src="${img.dataUrl}" alt="${escHtml(img.name)}" style="max-width:${Math.min(img.width || 300, 300)}px" loading="lazy"/>`
         : `<div class="ast-msg-img-loading" data-db-id="${img.dbId || ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>${escHtml(img.name || '图片')}</span></div>`
     ).join('')}</div>` : ''
-    return `<div class="ast-msg ast-msg-user" data-msg-idx="${idx}"><div class="ast-msg-bubble ast-msg-bubble-user">${imagesHtml}${textPart ? escHtml(textPart) : ''}</div></div>`
+    return `<div class="ast-msg ast-msg-user" data-msg-idx="${idx}">
+      <div class="ast-msg-actions">
+        <button class="ast-msg-action-btn" data-action="edit" data-idx="${idx}" title="重新编辑">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="ast-msg-action-btn" data-action="delete" data-idx="${idx}" title="撤回消息">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        </button>
+      </div>
+      <div class="ast-msg-bubble ast-msg-bubble-user">${imagesHtml}${textPart ? escHtml(textPart) : ''}</div>
+    </div>`
   } else if (m.role === 'assistant') {
     const toolHtml = m.toolHistory ? renderToolBlocks(m.toolHistory) : ''
     return `<div class="ast-msg ast-msg-ai" data-msg-idx="${idx}">${toolHtml}<div class="ast-msg-bubble ast-msg-bubble-ai">${renderMarkdown(m.content)}</div></div>`
