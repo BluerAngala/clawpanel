@@ -40,7 +40,7 @@ const NAV_ITEMS_FULL = [
     ]
   },
   {
-    section: '龙虾军团',
+    section: '龙虾军团（开发中）',
     items: [
       { route: '/docker', label: '龙虾军团', icon: 'docker' },
     ]
