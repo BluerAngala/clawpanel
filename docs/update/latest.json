@@ -1,9 +1,9 @@
 {
-  "version": "0.7.0",
-  "minAppVersion": "0.6.0",
-  "hash": "",
-  "url": "",
-  "size": 0,
+  "version": "0.0.1",
+  "minAppVersion": "0.0.1",
+  "hash": "sha256:664cf348a935f4880c9dfef0e13d0bf2cb6bb02bbb4bf4adbde099ef25ee09f6",
+  "url": "https://github.com/BluerAngala/clawpanel/releases/download/v0.0.1/web-0.0.1.zip",
+  "size": 2465381,
   "changelog": "",
-  "releasedAt": ""
+  "releasedAt": "2026-03-13T12:50:16Z"
 }
