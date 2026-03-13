@@ -173,41 +173,53 @@ function renderInstallSection() {
 
   return `
     <div style="margin-left:24px">
-      <p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-sm)">
+      <p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-md)">
         尚未检测到 OpenClaw。我们将自动为您配置核心服务与网关。
       </p>
-      <div style="display:flex;align-items:center;gap:12px">
-        <button class="btn btn-primary btn-sm" id="btn-install" style="padding:8px 20px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      
+      <div style="background:var(--bg-tertiary);border-radius:var(--radius-md);border:1px solid var(--border-primary);overflow:hidden">
+        <button class="btn btn-primary" id="btn-install" style="width:100%;padding:14px 24px;border-radius:0;font-size:var(--font-size-base);font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
           智能安装
         </button>
-        <details style="font-size:var(--font-size-xs);color:var(--text-tertiary);cursor:pointer">
-          <summary>高级选项</summary>
-          <div style="margin-top:8px;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border-primary)">
-            <div style="margin-bottom:10px">
-              <label style="display:block;margin-bottom:4px">手动选择源</label>
-              <div style="display:flex;gap:12px">
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
-                  <input type="radio" name="install-source" value="official" checked> 官方源
+        
+        <details style="border-top:1px solid var(--border-primary)">
+          <summary style="padding:12px 16px;font-size:var(--font-size-sm);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.2s;user-select:none" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24M6.34 6.34L2.1 2.1m17.9 9.9h-6m-6 0H2.1m15.12 4.24l4.24 4.24M6.34 17.66l-4.24 4.24"/></svg>
+            高级选项
+          </summary>
+          <div style="padding:16px;background:var(--bg-secondary);border-top:1px solid var(--border-primary)">
+            <div style="margin-bottom:16px">
+              <label style="display:block;margin-bottom:8px;font-size:var(--font-size-sm);color:var(--text-primary);font-weight:500">安装源选择</label>
+              <div style="display:flex;gap:8px">
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;background:var(--bg-primary);border:2px solid var(--primary);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s">
+                  <input type="radio" name="install-source" value="official" checked style="width:16px;height:16px;accent-color:var(--primary)">
+                  <span style="font-size:var(--font-size-sm);color:var(--text-primary);font-weight:500">官方源</span>
                 </label>
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
-                  <input type="radio" name="install-source" value="chinese"> 备用源
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;background:var(--bg-primary);border:2px solid var(--border-primary);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s">
+                  <input type="radio" name="install-source" value="chinese" style="width:16px;height:16px;accent-color:var(--primary)">
+                  <span style="font-size:var(--font-size-sm);color:var(--text-secondary)">备用源</span>
                 </label>
               </div>
             </div>
             <div>
-              <label style="display:block;margin-bottom:4px">npm 镜像源</label>
-              <select id="registry-select" style="width:100%;padding:4px;font-size:11px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-primary)">
-                <option value="https://registry.npmmirror.com">淘宝镜像 (推荐)</option>
-                <option value="https://registry.npmjs.org">官方源</option>
-              </select>
+              <label style="display:block;margin-bottom:8px;font-size:var(--font-size-sm);color:var(--text-primary);font-weight:500">npm 镜像源</label>
+              <div style="position:relative">
+                <select id="registry-select" style="width:100%;padding:10px 12px;padding-right:32px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);border:2px solid var(--border-primary);border-radius:var(--radius-sm);cursor:pointer;appearance:none">
+                  <option value="https://registry.npmmirror.com">淘宝镜像 (推荐)</option>
+                  <option value="https://registry.npmjs.org">官方源</option>
+                </select>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-tertiary)"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
             </div>
           </div>
         </details>
       </div>
+      
       ${isDesktop ? `
-        <div style="margin-top:var(--space-sm);font-size:11px;color:var(--text-tertiary);line-height:1.5">
-          * 将自动尝试官方源，失败时自动切换至备用源并安装网关服务。
+        <div style="margin-top:var(--space-md);padding:10px 12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs);color:var(--text-tertiary);line-height:1.6;display:flex;align-items:flex-start;gap:6px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="flex-shrink:0;margin-top:1px;color:var(--info)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>将自动尝试官方源，失败时自动切换至备用源并安装网关服务。</span>
         </div>` : ''}
     </div>
   `

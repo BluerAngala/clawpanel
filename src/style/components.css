@@ -183,10 +183,10 @@
   max-width: 360px;
 }
 
-.toast.success { background: var(--success-muted); border: 1px solid rgba(34,197,94,0.3); color: var(--success); }
-.toast.error { background: var(--error-muted); border: 1px solid rgba(239,68,68,0.3); color: var(--error); }
-.toast.info { background: var(--info-muted); border: 1px solid rgba(59,130,246,0.3); color: var(--info); }
-.toast.warning { background: var(--warning-muted); border: 1px solid rgba(245,158,11,0.3); color: var(--warning); }
+.toast.success { background: var(--bg-secondary); border: 1px solid var(--success); color: var(--success); box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2); }
+.toast.error { background: var(--bg-secondary); border: 1px solid var(--error); color: var(--error); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
+.toast.info { background: var(--bg-secondary); border: 1px solid var(--info); color: var(--info); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+.toast.warning { background: var(--bg-secondary); border: 1px solid var(--warning); color: var(--warning); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2); }
 
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(20px); }
