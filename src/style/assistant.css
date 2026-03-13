@@ -70,6 +70,7 @@
   cursor: pointer;
   transition: background var(--transition-fast);
   gap: 4px;
+  min-width: 0;
 }
 
 .ast-session-item:hover {
@@ -134,18 +135,31 @@
   border-bottom: 1px solid var(--border-primary);
   flex-shrink: 0;
   gap: 8px;
+  min-width: 0;
 }
 
 .ast-header-left {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .ast-header-actions {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
+}
+
+.ast-title {
+  flex-shrink: 0;
+}
+
+.ast-model-badge {
+  flex-shrink: 0;
 }
 
 .ast-toggle-sidebar {
@@ -397,6 +411,33 @@
 .ast-send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.ast-input-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+  padding: 0 4px;
+}
+
+.ast-toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ast-toolbar-btn:hover {
+  color: var(--success);
+  background: var(--success-muted);
+  border-color: var(--success);
 }
 
 .ast-input-hint {

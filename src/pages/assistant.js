@@ -4182,6 +4182,12 @@ export async function render() {
       <div class="ast-input-area">
         <div class="ast-quick-bar" id="ast-quick-bar" style="display:none"></div>
         <div class="ast-image-preview" id="ast-image-preview"></div>
+        <div class="ast-input-toolbar">
+          <button class="ast-toolbar-btn" id="ast-btn-input-new" title="创建新会话">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            新建会话
+          </button>
+        </div>
         <div class="ast-input-wrap">
           <button class="ast-attach-btn" id="ast-btn-attach" title="上传图片">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -4386,7 +4392,7 @@ export async function render() {
     page.querySelector('#ast-sidebar').classList.toggle('open')
   })
 
-  // 新建会话
+  // 新建会话（侧边栏按钮）
   page.querySelector('#ast-btn-new').addEventListener('click', () => {
     const mode = currentMode() === 'openclaw' ? 'openclaw' : 'assistant'
     
@@ -4396,6 +4402,20 @@ export async function render() {
       createSession(mode)
       renderSessionList()
       renderMessages()
+    }
+  })
+
+  // 新建会话（输入框按钮）
+  page.querySelector('#ast-btn-input-new').addEventListener('click', () => {
+    const mode = currentMode() === 'openclaw' ? 'openclaw' : 'assistant'
+    
+    if (mode === 'openclaw') {
+      showNewOCSessionDialog()
+    } else {
+      createSession(mode)
+      renderSessionList()
+      renderMessages()
+      toast('新会话已创建', 'success')
     }
   })
 
